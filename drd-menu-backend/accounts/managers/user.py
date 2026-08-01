@@ -63,7 +63,7 @@ class UserManager(BaseUserManager):
     def create_superuser(
         self,
         username: str,
-        password: str,
+        password: Optional[str] = None,
         **extra_fields,
     ):
         """
