@@ -34,7 +34,6 @@ class UserAdmin(BaseUserAdmin):
         "username",
         "email",
         "phone_number",
-        "full_name",
     ]
 
     list_filter = [
