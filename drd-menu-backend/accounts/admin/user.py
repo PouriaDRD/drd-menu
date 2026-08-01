@@ -1,7 +1,10 @@
 from django.contrib import admin
+from django.forms import ModelForm
+from django.http import HttpRequest
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from accounts.models import UserModel
+from accounts.enums import UserRole
 
 
 @admin.register(UserModel)
@@ -118,3 +121,32 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+    def get_form(
+        self,
+        request: HttpRequest,
+        obj: UserModel | None = None,
+        change: bool = False,
+        **kwargs,
+    ) -> type[ModelForm]:
+        form = super().get_form(
+            request=request,
+            obj=obj,
+            change=change,
+            **kwargs,
+        )
+
+        # If the user is a superuser, allow all roles to be selected.
+        if obj and obj.is_superuser:
+            form.base_fields["role"].choices = [  # type: ignore
+                (UserRole.SUPERUSER, UserRole.SUPERUSER.label),
+            ]
+            return form
+
+        if "role" in form.base_fields:
+            form.base_fields["role"].choices = [  # type: ignore
+                (UserRole.USER, UserRole.USER.label),
+                (UserRole.ADMIN, UserRole.ADMIN.label),
+            ]
+
+        return form
