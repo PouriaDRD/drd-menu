@@ -78,7 +78,7 @@ REST_FRAMEWORK = {
     "ALLOWED_VERSIONS": [
         "v1",
     ],
-    "EXCEPTION_HANDLER": "config.exception_handler.custom_exception_handler",
+    "EXCEPTION_HANDLER": "config.exceptions.handler.custom_exception_handler",
 }
 
 
