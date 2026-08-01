@@ -11,7 +11,7 @@ SECRET_KEY = config.app.secret_key
 USE_SQLITE = config.database.use_sqlite
 
 
-# AUTH_USER_MODEL = "accounts.UserModel"
+AUTH_USER_MODEL = "accounts.UserModel"
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
