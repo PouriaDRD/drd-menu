@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.db.models import Q
 from django_cleanup import cleanup
 from django.contrib.auth import get_user_model
 
@@ -53,6 +54,15 @@ class UserAvatarModel(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
+
+        # Ensure that each user can have only one primary avatar at a time.
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user"],
+                condition=Q(is_primary=True),
+                name="unique_primary_avatar_per_user",
+            )
+        ]
 
     def __str__(self):
         return f"{self.user.username} avatar"
