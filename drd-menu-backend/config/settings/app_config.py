@@ -80,6 +80,15 @@ class DatabaseConfig:
     db_port: int
 
 
+@dataclass(frozen=True)
+class MediaConfig:
+    """
+    Media configuration.
+    """
+
+    max_avatar_size: int
+
+
 class Config:
     """
     Main application configuration class.
@@ -103,6 +112,10 @@ class Config:
             time_zone=self._get_required("TIME_ZONE"),
             use_i18n=self._get_bool("USE_I18N"),
             use_tz=self._get_bool("USE_TZ"),
+        )
+
+        self.media = MediaConfig(
+            max_avatar_size=self._get_int("MAX_AVATAR_SIZE_NUMBER"),
         )
 
         self.auth = AuthConfig(
