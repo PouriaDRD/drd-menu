@@ -87,7 +87,7 @@ class UserAvatarAdmin(admin.ModelAdmin):
             return "-"
 
         return format_html(
-            '<img src="{}" width="48" height="48" '
+            '<img src="{}" width="32" height="32" '
             'style="border-radius:50%;object-fit:cover;" />',
             obj.image.url,
         )
