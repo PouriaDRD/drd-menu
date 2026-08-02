@@ -53,13 +53,7 @@ class UserAvatarInline(admin.TabularInline):
             obj.image.url,
         )
 
-    def save_formset(
-        self,
-        request,
-        form,
-        formset,
-        change,
-    ):
+    def save_formset(self, request, form, formset, change):
         """
         Ensure only one primary avatar per user.
         """
@@ -67,7 +61,6 @@ class UserAvatarInline(admin.TabularInline):
         instances = formset.save(commit=False)
 
         for instance in instances:
-
             instance.save()
 
             if instance.is_primary:

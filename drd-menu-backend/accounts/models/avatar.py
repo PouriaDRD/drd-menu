@@ -1,9 +1,10 @@
 import uuid
 
-from django.db import models, transaction
+from django.db import models
 from django.db.models import Q
-from django_cleanup import cleanup
 from django.contrib.auth import get_user_model
+
+from django_cleanup import cleanup
 
 from accounts.validators.avatar import (
     avatar_validator,
@@ -14,15 +15,25 @@ UserModel = get_user_model()
 
 
 def avatar_upload_path(instance, filename):
-    ext = filename.rsplit(".", 1)[-1]
+    """
+    Generate avatar upload path.
 
-    return f"users/avatars/" f"{instance.user.id}/" f"{instance.id}.{ext}"
+    Example:
+        users/avatars/<user_id>/<avatar_id>.png
+    """
+
+    extension = filename.rsplit(".", 1)[-1].lower()
+
+    return f"users/avatars/" f"{instance.user.id}/" f"{instance.id}.{extension}"
 
 
 @cleanup.select
 class UserAvatarModel(models.Model):
     """
     Stores user avatar images.
+
+    A user can have multiple avatars,
+    but only one avatar can be primary.
     """
 
     id = models.UUIDField(
@@ -37,77 +48,86 @@ class UserAvatarModel(models.Model):
         on_delete=models.CASCADE,
         related_name="avatars",
         db_index=True,
-        help_text="Owner of this avatar.",
+        help_text="User who owns this avatar.",
     )
 
     image = models.ImageField(
         upload_to=avatar_upload_path,
-        validators=[avatar_validator],
-        help_text="Avatar image.",
+        validators=[
+            avatar_validator,
+        ],
+        help_text=(
+            "Avatar image. "
+            "Allowed formats: JPG, JPEG, PNG, GIF. "
+            "Maximum dimensions will be resized to 512x512."
+        ),
     )
 
     is_primary = models.BooleanField(
         default=False,
         db_index=True,
-        help_text="Whether this avatar is the user's primary avatar.",
+        help_text=("Defines whether this avatar is the user's primary avatar."),
     )
 
     created_at = models.DateTimeField(
         auto_now_add=True,
-        help_text="Avatar upload time.",
+        help_text="Avatar creation time.",
     )
 
     class Meta:
+        verbose_name = "User Avatar"
+        verbose_name_plural = "User Avatars"
+
         ordering = ("-created_at",)
 
         constraints = [
             models.UniqueConstraint(
-                fields=["user"],
-                condition=Q(is_primary=True),
+                fields=[
+                    "user",
+                ],
+                condition=Q(
+                    is_primary=True,
+                ),
                 name="unique_primary_avatar_per_user",
-            )
+            ),
         ]
 
-    def __str__(self):
-        return f"{self.user.username} avatar"
+        indexes = [
+            models.Index(
+                fields=[
+                    "user",
+                    "is_primary",
+                ],
+            ),
+            models.Index(
+                fields=[
+                    "created_at",
+                ],
+            ),
+        ]
 
     def save(self, *args, **kwargs):
         """
-        Save avatar.
-
-        Rules:
-        - First uploaded avatar becomes primary automatically.
-        - Only one primary avatar is allowed per user.
-        - Image is resized before saving.
+        Save avatar and resize image only when image changes.
         """
 
-        with transaction.atomic():
+        if self.pk:
+            old_instance = UserAvatarModel.objects.filter(
+                pk=self.pk,
+            ).first()
 
-            is_new = self._state.adding
-
-            if is_new and not self.user.avatars.exists():  # type: ignore
-                self.is_primary = True
-
-            if self.is_primary:
-                (
-                    UserAvatarModel.objects.filter(
-                        user=self.user,
-                        is_primary=True,
-                    )
-                    .exclude(
-                        pk=self.pk,
-                    )
-                    .update(
-                        is_primary=False,
-                    )
+            if old_instance and old_instance.image != self.image:
+                self.image = resize_avatar(
+                    self.image,
                 )
 
+        else:
             if self.image:
                 self.image = resize_avatar(
                     self.image,
                 )
 
-            super().save(
-                *args,
-                **kwargs,
-            )
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.user} avatar"

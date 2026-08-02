@@ -41,8 +41,6 @@ def avatar_validator(file):
 def resize_avatar(file):
     """
     Resize avatar image to maximum 512x512.
-
-    Returns resized ContentFile.
     """
 
     image = Image.open(file)
