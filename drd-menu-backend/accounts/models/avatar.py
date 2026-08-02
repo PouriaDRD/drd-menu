@@ -1,16 +1,21 @@
 import uuid
-from django.db import models
+
+from django.db import models, transaction
 from django.db.models import Q
 from django_cleanup import cleanup
 from django.contrib.auth import get_user_model
 
-from accounts.validators.avatar import avatar_validator, resize_avatar
+from accounts.validators.avatar import (
+    avatar_validator,
+    resize_avatar,
+)
 
 UserModel = get_user_model()
 
 
 def avatar_upload_path(instance, filename):
     ext = filename.rsplit(".", 1)[-1]
+
     return f"users/avatars/" f"{instance.user.id}/" f"{instance.id}.{ext}"
 
 
@@ -55,7 +60,6 @@ class UserAvatarModel(models.Model):
     class Meta:
         ordering = ("-created_at",)
 
-        # Ensure that each user can have only one primary avatar at a time.
         constraints = [
             models.UniqueConstraint(
                 fields=["user"],
@@ -68,6 +72,42 @@ class UserAvatarModel(models.Model):
         return f"{self.user.username} avatar"
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
+        """
+        Save avatar.
 
-        resize_avatar(self)
+        Rules:
+        - First uploaded avatar becomes primary automatically.
+        - Only one primary avatar is allowed per user.
+        - Image is resized before saving.
+        """
+
+        with transaction.atomic():
+
+            is_new = self._state.adding
+
+            if is_new and not self.user.avatars.exists():  # type: ignore
+                self.is_primary = True
+
+            if self.is_primary:
+                (
+                    UserAvatarModel.objects.filter(
+                        user=self.user,
+                        is_primary=True,
+                    )
+                    .exclude(
+                        pk=self.pk,
+                    )
+                    .update(
+                        is_primary=False,
+                    )
+                )
+
+            if self.image:
+                self.image = resize_avatar(
+                    self.image,
+                )
+
+            super().save(
+                *args,
+                **kwargs,
+            )

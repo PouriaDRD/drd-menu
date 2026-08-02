@@ -28,6 +28,10 @@ class UserAvatarModelTests(TestCase):
         )
 
     def test_create_avatar(self):
+        """
+        First avatar should automatically become primary.
+        """
+
         user = UserModel.objects.create_user(
             username="pouria",
         )
@@ -37,13 +41,13 @@ class UserAvatarModelTests(TestCase):
             image=self.create_image(),
         )
 
+        self.assertTrue(
+            avatar.is_primary,
+        )
+
         self.assertEqual(
             avatar.user,
             user,
-        )
-
-        self.assertFalse(
-            avatar.is_primary,
         )
 
     def test_avatar_path_contains_user_id(self):

@@ -3,8 +3,9 @@ from django.forms import ModelForm
 from django.http import HttpRequest
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from accounts.models import UserModel
 from accounts.enums import UserRole
+from accounts.models import UserModel
+from .avatar_inline import UserAvatarInline
 
 
 @admin.register(UserModel)
@@ -12,6 +13,10 @@ class UserAdmin(BaseUserAdmin):
     """
     Admin configuration for UserModel.
     """
+
+    inlines = [
+        UserAvatarInline,
+    ]
 
     list_per_page = 50
 
@@ -53,6 +58,15 @@ class UserAdmin(BaseUserAdmin):
         "updated_at",
         "created_at",
     ]
+
+    def get_queryset(self, request):
+        """
+        Optimize user admin queryset.
+        """
+
+        queryset = super().get_queryset(request)
+
+        return queryset.select_related()
 
     add_fieldsets = (
         (

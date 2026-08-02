@@ -38,26 +38,28 @@ def avatar_validator(file):
         )
 
 
-def resize_avatar(instance):
+def resize_avatar(file):
     """
-    Resize avatar image so that it fits inside 512x512.
+    Resize avatar image to maximum 512x512.
+
+    Returns resized ContentFile.
     """
 
-    if not instance.image:
-        return
-
-    image = Image.open(instance.image)
+    image = Image.open(file)
 
     if image.mode not in ("RGB", "RGBA"):
         image = image.convert("RGB")
 
-    image.thumbnail(MAX_SIZE, Image.Resampling.LANCZOS)
+    image.thumbnail(
+        MAX_SIZE,
+        Image.Resampling.LANCZOS,
+    )
 
     output = BytesIO()
 
-    extension = instance.image.name.lower().split(".")[-1]
+    extension = os.path.splitext(file.name)[1].lower()
 
-    if extension in ("jpg", "jpeg"):
+    if extension in (".jpg", ".jpeg"):
         image.save(
             output,
             format="JPEG",
@@ -65,14 +67,14 @@ def resize_avatar(instance):
             optimize=True,
         )
 
-    elif extension == "png":
+    elif extension == ".png":
         image.save(
             output,
             format="PNG",
             optimize=True,
         )
 
-    elif extension == "gif":
+    elif extension == ".gif":
         image.save(
             output,
             format="GIF",
@@ -80,10 +82,7 @@ def resize_avatar(instance):
 
     output.seek(0)
 
-    instance.image.save(
-        instance.image.name,
-        ContentFile(output.read()),
-        save=False,
+    return ContentFile(
+        output.read(),
+        name=file.name,
     )
-
-    super(instance.__class__, instance).save(update_fields=["image"])
