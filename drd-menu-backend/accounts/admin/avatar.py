@@ -13,10 +13,10 @@ class UserAvatarAdmin(admin.ModelAdmin):
     list_per_page = 50
 
     list_display = (
-        "thumbnail",
         "user",
         "is_primary",
         "created_at",
+        "thumbnail",
     )
 
     list_display_links = (
