@@ -1,5 +1,5 @@
 from .base import *
-from .app_config import config
+from ..app_config import config
 
 DEBUG = False
 ENABLE_DEBUG_TOOLBAR = False

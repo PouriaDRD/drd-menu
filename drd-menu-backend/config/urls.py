@@ -9,7 +9,8 @@ from drf_spectacular.views import (
     SpectacularRedocView,
 )
 
-from config.settings.app_config import config
+from .app_config import config
+from common import views as common_views
 
 router = routers.DefaultRouter()
 
@@ -17,10 +18,11 @@ base_url = config.app.base_url
 admin_url = config.app.admin_url
 
 urlpatterns = [
+    path("", common_views.index, name="index"),
     path(base_url, include(router.urls)),
     # Admin URL without base_url
     path(base_url + admin_url, admin.site.urls),
-    # API v1 documentation
+    # API documentation
     path(
         "schema/",
         SpectacularAPIView.as_view(api_version="v1"),

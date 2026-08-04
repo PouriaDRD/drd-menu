@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from datetime import timedelta
 
-from config.settings.app_config import config
+from ..app_config import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 

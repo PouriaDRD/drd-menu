@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile
 from django.core.exceptions import ValidationError
 
 
-from config.settings.app_config import config
+from config.app_config import config
 
 MAX_SIZE = (512, 512)
 

@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from dataclasses import dataclass
 
 # Project root (directory containing manage.py and .env)
-ROOT_DIR = Path(__file__).resolve().parents[2]
+ROOT_DIR = Path(__file__).resolve().parents[1]
 
 ENV_FILE = ROOT_DIR / ".env"
 

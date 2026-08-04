@@ -1,4 +1,4 @@
-from .app_config import config
+from ..app_config import config
 
 if config.app.debug:
     from .development import *
