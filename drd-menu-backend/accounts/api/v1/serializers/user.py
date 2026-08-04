@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from config.exceptions.codes import ErrorCode
+from common.handlers.codes import ErrorCode
 from accounts.normalizers.user import (
     normalize_phone_number,
     normalize_username,

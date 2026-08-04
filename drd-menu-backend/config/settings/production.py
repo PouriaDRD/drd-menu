@@ -51,9 +51,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_RENDERER_CLASSES": [
-        # "rest_framework.renderers.JSONRenderer",
-        "config.renderers.ApiRenderer",
+        "common.handlers.api_handler.ApiRenderer",
     ],
+    "EXCEPTION_HANDLER": "common.handlers.exception_handler",
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
@@ -78,7 +78,6 @@ REST_FRAMEWORK = {
     "ALLOWED_VERSIONS": [
         "v1",
     ],
-    "EXCEPTION_HANDLER": "config.exceptions.handler.custom_exception_handler",
 }
 
 

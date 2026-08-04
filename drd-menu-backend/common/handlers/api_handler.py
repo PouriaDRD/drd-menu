@@ -3,7 +3,7 @@ import copy
 from django.utils.translation import gettext as _
 from rest_framework.renderers import JSONRenderer
 
-from .exceptions.codes import ErrorCode
+from .codes import ErrorCode
 
 
 def normalize_errors(errors):

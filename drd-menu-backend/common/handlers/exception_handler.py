@@ -12,7 +12,7 @@ from .codes import ErrorCode
 logger = logging.getLogger(__name__)
 
 
-def custom_exception_handler(exc, context):
+def exception_handler(exc, context):
 
     response = exception_handler(
         exc,
