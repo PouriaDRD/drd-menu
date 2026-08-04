@@ -1,7 +1,6 @@
 from PIL import Image
 from io import BytesIO
 from django.test import TestCase
-from django.db import IntegrityError
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 

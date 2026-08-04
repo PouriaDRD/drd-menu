@@ -2,7 +2,6 @@ import logging
 
 from rest_framework import status
 from rest_framework.response import Response
-from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.generics import RetrieveUpdateAPIView
@@ -17,33 +16,10 @@ from ..serializers import UserSerializer
 
 logger = logging.getLogger(__name__)
 
-UserModel = get_user_model()
-
 
 class UserProfileAPIView(RetrieveUpdateAPIView):
     """
     Retrieve and update authenticated user's profile.
-
-    Available operations:
-    - GET: Retrieve current user's profile.
-    - PUT: Replace editable profile fields.
-    - PATCH: Partially update profile fields.
-
-    Authentication:
-    - Requires JWT authentication.
-
-    Editable fields:
-    - username
-    - email
-    - phone_number
-    - first_name
-    - last_name
-
-    Restricted fields:
-    - id
-    - role
-    - status
-    - permissions
     """
 
     http_method_names = [

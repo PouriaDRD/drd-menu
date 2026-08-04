@@ -53,7 +53,7 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "common.handlers.api_handler.ApiRenderer",
     ],
-    "EXCEPTION_HANDLER": "common.handlers.exception_handler",
+    "EXCEPTION_HANDLER": "common.handlers.exception_handler.custom_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],

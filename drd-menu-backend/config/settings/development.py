@@ -48,7 +48,7 @@ REST_FRAMEWORK = {
         "common.handlers.api_handler.ApiRenderer",
         "rest_framework.renderers.BrowsableAPIRenderer",
     ],
-    "EXCEPTION_HANDLER": "common.handlers.exception_handler",
+    "EXCEPTION_HANDLER": "common.handlers.exception_handler.custom_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
