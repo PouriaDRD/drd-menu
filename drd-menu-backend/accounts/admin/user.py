@@ -8,8 +8,6 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from accounts.models import UserModel
 from accounts.enums import UserRole, UserStatus
 
-from .avatar_inline import UserAvatarInline
-
 
 @admin.register(UserModel)
 class UserAdmin(BaseUserAdmin):
@@ -17,25 +15,17 @@ class UserAdmin(BaseUserAdmin):
     Admin configuration for UserModel.
     """
 
-    inlines = [
-        UserAvatarInline,
-    ]
-
     list_per_page = 50
 
     list_display = [
-        "username",
-        "full_name",
-        "email",
         "phone_number",
+        "full_name",
         "status_badge",
         "last_login",
         "created_at",
     ]
 
     search_fields = [
-        "username",
-        "email",
         "phone_number",
         "first_name",
         "last_name",
@@ -44,8 +34,6 @@ class UserAdmin(BaseUserAdmin):
     list_filter = [
         "role",
         "status",
-        "email_verified",
-        "phone_number_verified",
     ]
 
     ordering = [
@@ -66,8 +54,6 @@ class UserAdmin(BaseUserAdmin):
             {
                 "fields": (
                     "id",
-                    "username",
-                    "email",
                     "phone_number",
                     "first_name",
                     "last_name",
@@ -81,8 +67,6 @@ class UserAdmin(BaseUserAdmin):
                 "fields": (
                     "role",
                     "status",
-                    "email_verified",
-                    "phone_number_verified",
                     "is_superuser",
                 ),
             },
@@ -115,10 +99,8 @@ class UserAdmin(BaseUserAdmin):
             {
                 "classes": ("wide",),
                 "fields": (
-                    "username",
                     "first_name",
                     "last_name",
-                    "email",
                     "phone_number",
                     "role",
                     "status",
@@ -128,15 +110,6 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
-
-    def get_queryset(self, request):
-        """
-        Optimize user admin queryset.
-        """
-
-        queryset = super().get_queryset(request)
-
-        return queryset.select_related()
 
     @admin.display(description="Account", ordering="role")
     def status_badge(self, obj: UserModel):
@@ -168,12 +141,6 @@ class UserAdmin(BaseUserAdmin):
             "#6b7280",
         )
 
-        email_icon = "✓" if obj.email_verified else "✕"
-        phone_icon = "✓" if obj.phone_number_verified else "✕"
-
-        email_color = "#16a34a" if obj.email_verified else "#dc2626"
-        phone_color = "#16a34a" if obj.phone_number_verified else "#dc2626"
-
         return format_html(
             """
             {} {}
@@ -181,24 +148,11 @@ class UserAdmin(BaseUserAdmin):
             <span style="color:{};font-weight:600;">
                 {}
             </span>
-            ·
-            Email
-            <span style="color:{};font-weight:700;">
-                {}
-            </span>
-            Phone
-            <span style="color:{};font-weight:700;">
-                {}
-            </span>
             """,
             role_icon,
             role,
             status_color,
             status,
-            email_color,
-            email_icon,
-            phone_color,
-            phone_icon,
         )
 
     def get_form(

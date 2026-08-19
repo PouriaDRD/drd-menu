@@ -1,53 +1,50 @@
-from typing import Optional
+from typing import Any
 
 from django.contrib.auth.models import BaseUserManager
 
 from accounts.enums import UserRole, UserStatus
-from accounts.normalizers import (
-    normalize_phone_number,
-    normalize_username,
-)
+from core.normalizers import normalize_phone_number
 
 
 class UserManager(BaseUserManager):
-    """Custom manager responsible for creating and normalizing users."""
+    """
+    Manager for the custom UserModel.
+
+    Phone numbers are normalized before being used for authentication
+    or persisted in the database.
+    """
 
     def create_user(
         self,
-        username: str,
-        password: Optional[str] = None,
-        **extra_fields,
+        phone_number: str,
+        password: str | None = None,
+        **extra_fields: Any,
     ):
         """
         Create and return a regular user.
 
         Args:
-            username: Username used for authentication.
-            password: Optional password. If omitted, an unusable password is set.
-            **extra_fields: Additional model fields.
+            phone_number: Phone number used for authentication.
+            password: Optional password. If omitted, an unusable password
+                is assigned.
+            **extra_fields: Additional user model fields.
 
         Returns:
-            UserModel
+            UserModel: The newly created user.
+
+        Raises:
+            ValueError: If phone_number is not provided.
         """
+        if not phone_number:
+            raise ValueError("The phone_number field must be set.")
 
-        if not username:
-            raise ValueError("The username field must be set.")
-
-        username = normalize_username(username)
-
-        phone_number = extra_fields.get("phone_number")
-        if phone_number:
-            extra_fields["phone_number"] = normalize_phone_number(phone_number)
-
-        email = extra_fields.get("email")
-        if email:
-            extra_fields["email"] = self.normalize_email(email)
+        phone_number = normalize_phone_number(phone_number)
 
         extra_fields.setdefault("role", UserRole.USER)
         extra_fields.setdefault("status", UserStatus.ACTIVE)
 
         user = self.model(
-            username=username,
+            phone_number=phone_number,
             **extra_fields,
         )
 
@@ -62,39 +59,52 @@ class UserManager(BaseUserManager):
 
     def create_superuser(
         self,
-        username: str,
-        password: Optional[str] = None,
-        **extra_fields,
+        phone_number: str,
+        password: str | None = None,
+        **extra_fields: Any,
     ):
         """
-        Create and return a superuser.
+        Create and return a Django superuser.
+
+        Args:
+            phone_number: Phone number used for authentication.
+            password: Password required for a superuser.
+            **extra_fields: Additional user model fields.
+
+        Returns:
+            UserModel: The newly created superuser.
+
+        Raises:
+            ValueError: If phone_number or password is not provided.
         """
+        if not phone_number:
+            raise ValueError("Superusers must have a phone number.")
 
         if not password:
             raise ValueError("Superusers must have a password.")
 
         extra_fields.setdefault("role", UserRole.SUPERUSER)
         extra_fields.setdefault("status", UserStatus.ACTIVE)
+        extra_fields.setdefault("is_superuser", True)
 
-        extra_fields.setdefault("email_verified", True)
-        extra_fields.setdefault("phone_number_verified", True)
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superusers must have is_superuser=True.")
 
-        user = self.create_user(
-            username=username,
+        return self.create_user(
+            phone_number=phone_number,
             password=password,
             **extra_fields,
         )
 
-        user.is_superuser = True
-        user.save(using=self._db)
-
-        return user
-
-    def get_by_natural_key(self, username):
+    def get_by_natural_key(self, username: str):
         """
-        Allow authentication using a normalized username.
+        Retrieve a user using a normalized phone number.
+
+        ``username`` is kept as the parameter name to remain compatible
+        with Django's BaseUserManager type signature. Since this project
+        uses ``phone_number`` as USERNAME_FIELD, the value represents
+        the user's phone number.
         """
+        phone_number = normalize_phone_number(username)
 
-        username = normalize_username(username)
-
-        return self.get(username=username)
+        return self.get(phone_number=phone_number)

@@ -1,15 +1,18 @@
 import uuid
-
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 
-from accounts.enums import UserRole, UserStatus
+from core import validators
+from core.normalizers import normalize_phone_number
+
 from accounts.managers import UserManager
-from accounts.validators import user
+from accounts.enums import UserRole, UserStatus
 
 
 class UserModel(AbstractBaseUser, PermissionsMixin):
-    """Custom user model used for authentication."""
+    """
+    Custom user model authenticated by Iranian phone number.
+    """
 
     id = models.UUIDField(
         primary_key=True,
@@ -18,67 +21,43 @@ class UserModel(AbstractBaseUser, PermissionsMixin):
         help_text="Unique identifier for the user.",
     )
 
-    # Authentication username
-    username = models.CharField(
-        max_length=150,
-        unique=True,
-        validators=[user.username_validator],
-        help_text=(
-            "Required. Must start with an English letter and may contain only "
-            "English letters, numbers and underscore (_)."
-        ),
-        error_messages={
-            "unique": "A user with this username already exists.",
-        },
-    )
+    # -------------------------------------------------------------------------
+    # Authentication
+    # -------------------------------------------------------------------------
 
-    # Optional email address
-    email = models.EmailField(
-        unique=True,
-        blank=True,
-        null=True,
-        validators=[user.email_validator],
-        help_text="Optional. Must be a valid email address.",
-        error_messages={
-            "unique": "A user with this email already exists.",
-        },
-    )
-    email_verified = models.BooleanField(
-        default=False,
-        help_text="Indicates whether the email address has been verified.",
-    )
-
-    # Optional mobile number
     phone_number = models.CharField(
         max_length=11,
         unique=True,
-        blank=True,
-        null=True,
-        validators=[user.phone_number_validator],
-        help_text=("Optional. Iranian mobile number in the format 09XXXXXXXXX."),
+        db_index=True,
+        validators=[validators.model_phone_number_validator],
+        help_text="Iranian mobile number in the format 09XXXXXXXXX.",
         error_messages={
             "unique": "A user with this phone number already exists.",
         },
     )
-    phone_number_verified = models.BooleanField(
-        default=False,
-        help_text="Indicates whether the phone number has been verified.",
-    )
 
+    # -------------------------------------------------------------------------
     # Personal information
+    # -------------------------------------------------------------------------
+
     first_name = models.CharField(
         max_length=150,
         blank=True,
-        help_text="Optional first name.",
+        default="",
+        help_text="User's first name.",
     )
 
     last_name = models.CharField(
         max_length=150,
         blank=True,
-        help_text="Optional last name.",
+        default="",
+        help_text="User's last name.",
     )
 
-    # User account status
+    # -------------------------------------------------------------------------
+    # Account
+    # -------------------------------------------------------------------------
+
     status = models.CharField(
         max_length=20,
         choices=UserStatus.choices,
@@ -87,50 +66,100 @@ class UserModel(AbstractBaseUser, PermissionsMixin):
         help_text="Current account status.",
     )
 
-    # User role
     role = models.CharField(
         max_length=20,
         choices=UserRole.choices,
         default=UserRole.USER,
         db_index=True,
-        help_text="Role used for permissions.",
+        help_text="User role used for authorization.",
     )
 
-    # Audit fields
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        help_text="Last modification time.",
-    )
+    # -------------------------------------------------------------------------
+    # Audit
+    # -------------------------------------------------------------------------
 
     created_at = models.DateTimeField(
         auto_now_add=True,
-        help_text="Creation time.",
+        help_text="Date and time when the user was created.",
     )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        help_text="Date and time when the user was last updated.",
+    )
+
+    # -------------------------------------------------------------------------
+    # Manager
+    # -------------------------------------------------------------------------
 
     objects = UserManager()
 
-    USERNAME_FIELD = "username"
+    # -------------------------------------------------------------------------
+    # Authentication configuration
+    # -------------------------------------------------------------------------
+
+    USERNAME_FIELD = "phone_number"
+    REQUIRED_FIELDS: list[str] = []
+
+    # -------------------------------------------------------------------------
+    # Django permissions
+    # -------------------------------------------------------------------------
 
     @property
     def is_staff(self) -> bool:
-        """Return whether the user has access to Django admin."""
-        return self.is_superuser or self.role in (
+        """
+        Return whether the user can access the Django admin site.
+        """
+        return self.is_superuser or self.role in {
             UserRole.ADMIN,
             UserRole.SUPERUSER,
-        )
+        }
 
     @property
     def is_active(self) -> bool:  # type: ignore
-        """Return whether the account is active."""
+        """
+        Return whether the user account is active.
+        """
         return self.status == UserStatus.ACTIVE
+
+    # -------------------------------------------------------------------------
+    # Display helpers
+    # -------------------------------------------------------------------------
 
     @property
     def full_name(self) -> str:
-        """Return the user's display name."""
-        return f"{self.first_name} {self.last_name}".strip() or self.username
+        """
+        Return the user's full display name.
+        """
+        return " ".join(
+            part
+            for part in (
+                self.first_name.strip(),
+                self.last_name.strip(),
+            )
+            if part
+        )
 
     def __str__(self) -> str:
-        return self.username
+        if self.full_name.strip():
+            return f"{self.full_name} ({self.phone_number})"
+
+        return self.phone_number
+
+    # -------------------------------------------------------------------------
+    # Model lifecycle
+    # -------------------------------------------------------------------------
+
+    def save(self, *args, **kwargs):
+        """
+        Normalize the phone number before saving.
+        """
+        if self.phone_number:
+            self.phone_number = normalize_phone_number(
+                self.phone_number,
+            )
+
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "User"
