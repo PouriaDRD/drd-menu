@@ -34,6 +34,8 @@ export function useProfileForm({ onSuccess }: Props) {
 			}),
 		]);
 
+		form.reset();
+
 		toast.success("عملیات موفق بود", {
 			description: "اطلاعات شما با موفقیت ذخیره شد.",
 		});
