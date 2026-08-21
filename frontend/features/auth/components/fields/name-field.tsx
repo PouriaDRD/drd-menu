@@ -22,7 +22,7 @@ export function NameField<T extends FieldValues>(props: Props<T>) {
 			name={name}
 			control={control}
 			render={({ field, fieldState }) => (
-				<Field data-invalid={fieldState.invalid}>
+				<Field data-invalid={fieldState.invalid} dir="rtl">
 					<FieldLabel htmlFor="form-name">{label}</FieldLabel>
 					<Input
 						{...field}
@@ -36,7 +36,7 @@ export function NameField<T extends FieldValues>(props: Props<T>) {
 					{fieldState.invalid && (
 						<FieldError
 							errors={[fieldState.error]}
-							className="text-xs"
+							className="text-xs text-right"
 						/>
 					)}
 				</Field>

@@ -8,7 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { useUser } from "@/features/user/context";
+import { useUser } from "@/features/accounts/context";
+import { getApiErrorMessage } from "@/features/api/utils";
 
 import { createSession } from "../actions";
 import { useLogin } from "../mutations";
@@ -33,7 +34,7 @@ export function useLoginForm({ onSuccess }: Props) {
 	const form = useForm({
 		resolver: zodResolver(loginSchema),
 		defaultValues: {
-			email: loginStore.email,
+			phone_number: loginStore.phone_number,
 			password: "",
 		},
 	});
@@ -52,7 +53,9 @@ export function useLoginForm({ onSuccess }: Props) {
 			}),
 			refetchUser(),
 		]);
-		toast.success("ورود موفقیت آمیز  بود!");
+		toast.success("خوش آمدید!", {
+			description: "با موفقیت به حساب خود وارد شدید.",
+		});
 
 		// Reset form and store
 		form.reset();
@@ -60,25 +63,26 @@ export function useLoginForm({ onSuccess }: Props) {
 
 		onSuccess?.();
 
-		const redirectTo = next ?? "/panel/dashboard";
+		const redirectTo = next ?? "/panel/user";
 		router.push(redirectTo as "/");
 	};
 
 	const submit = form.handleSubmit(async (values) => {
 		loginMutation.mutate(values, {
-			onSuccess: async (res) => {
-				if (!res.success) {
-					toast.error(
-						res.message || "نام کاربری / رمز عبور اشتباه است!",
-					);
+			onSuccess: async (response) => {
+				if (response.success) {
+					await handleOnSuccess(response.data);
 					return;
 				}
-				if (res.success) {
-					await handleOnSuccess(res.data);
-				}
+
+				toast.error("خطا!", {
+					description: getApiErrorMessage(response.code),
+				});
 			},
 			onError: () => {
-				toast.error("نام کاربری / رمز عبور اشتباه است!");
+				toast.error("خطا!", {
+					description: "اطلاعات وارد شده صحیح نیست.",
+				});
 			},
 		});
 	});
@@ -88,7 +92,7 @@ export function useLoginForm({ onSuccess }: Props) {
 		// eslint-disable-next-line react-hooks/incompatible-library
 		const subscription = form.watch(async (values) => {
 			loginStore.set({
-				email: values.email,
+				phone_number: values.phone_number,
 				password: values.password,
 			});
 		});
@@ -97,7 +101,7 @@ export function useLoginForm({ onSuccess }: Props) {
 
 	const onHasHydrated = useEffectEvent(() => {
 		form.reset({
-			email: loginStore.email,
+			phone_number: loginStore.phone_number,
 			password: "",
 		});
 	});

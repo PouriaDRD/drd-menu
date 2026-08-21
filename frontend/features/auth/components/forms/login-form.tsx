@@ -3,7 +3,7 @@
 import { Button, FieldGroup, Spinner } from "@/components/ui";
 
 import { useLoginForm } from "../../hooks";
-import { EmailField, PasswordField } from "../fields";
+import { PasswordField, PhoneNumberField } from "../fields";
 
 interface Props {
 	onSuccess?: () => void;
@@ -19,8 +19,12 @@ function LoginForm({ onSuccess }: Props) {
 	return (
 		<form id="login-form" onSubmit={submit}>
 			<FieldGroup>
-				{/* Email Name */}
-				<EmailField control={form.control} name="email" label="ایمیل" />
+				{/* Phone Number */}
+				<PhoneNumberField
+					control={form.control}
+					name="phone_number"
+					label="شماره همراه"
+				/>
 
 				{/* Password */}
 				<PasswordField

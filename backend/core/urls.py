@@ -38,7 +38,7 @@ urlpatterns = [
     ),
     # API v1 routes
     path(base_url + "v1/accounts/", include("accounts.api.v1.urls")),
-    # path(base_url + "v1/authentication/", include("authentication.api.v1.urls")),
+    path(base_url + "v1/authentication/", include("authentication.api.v1.urls")),
 ]
 
 

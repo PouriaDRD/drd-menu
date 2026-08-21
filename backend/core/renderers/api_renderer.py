@@ -13,11 +13,17 @@ DEFAULT_ERROR_CODE = "ERROR"
 VALIDATION_ERROR_CODE = "VALIDATION_ERROR"
 UNKNOWN_ERROR_CODE = "UNKNOWN_ERROR"
 
+API_METADATA_KEYS = {
+    "code",
+    "message",
+}
+
 
 def is_success_status(status_code: int) -> bool:
     """
     Return True when the HTTP status code represents a successful response.
     """
+
     return SUCCESS_STATUS_MIN <= status_code <= SUCCESS_STATUS_MAX
 
 
@@ -25,6 +31,7 @@ def stringify(value: Any) -> str:
     """
     Convert a value into a human-readable string.
     """
+
     if isinstance(value, str):
         return value
 
@@ -33,46 +40,53 @@ def stringify(value: Any) -> str:
 
 def get_error_code(error: Any) -> str:
     """
-    Extract a DRF error code from an ErrorDetail instance.
-
-    Falls back to ``error`` when no code is available.
+    Extract the DRF error code from an ErrorDetail instance.
     """
+
     code = getattr(error, "code", None)
 
     if code is None:
-        return "error"
+        return DEFAULT_ERROR_CODE
 
     return str(code)
 
 
-def normalize_error_item(error: Any) -> dict[str, str]:
+def normalize_error_item(
+    error: Any,
+) -> dict[str, str]:
     """
-    Convert a single DRF error into a frontend-friendly structure.
+    Convert a single DRF error into frontend structure.
+    """
 
-    Example:
+    if isinstance(error, Mapping):
 
-        ErrorDetail(
-            "This field is required.",
-            code="required",
-        )
+        message = error.get("message")
 
-    becomes:
+        code = error.get("code")
 
-        {
-            "message": "This field is required.",
-            "code": "required",
+        return {
+            "message": stringify(message) if message else "Validation error.",
+            "code": stringify(code) if code else DEFAULT_ERROR_CODE,
         }
-    """
+
     return {
         "message": stringify(error),
         "code": get_error_code(error),
     }
 
 
-def normalize_error_value(value: Any) -> list[dict[str, str]]:
+def normalize_error_value(
+    value: Any,
+) -> list[dict[str, str]]:
     """
-    Normalize an error value into a list of structured errors.
+    Normalize a single field's errors.
+
+    Supports:
+
+        ErrorDetail(...)
+        [ErrorDetail(...), ErrorDetail(...)]
     """
+
     if isinstance(value, (list, tuple)):
         return [normalize_error_item(error) for error in value]
 
@@ -85,42 +99,31 @@ def normalize_errors(
     data: Any,
 ) -> dict[str, list[dict[str, str]]]:
     """
-    Normalize DRF errors into a predictable structure for the frontend.
+    Normalize DRF validation errors.
 
     Example input:
 
         {
-            "phone_number": [
+            "email": [
                 ErrorDetail(
-                    "A user with this phone number already exists.",
-                    code="unique",
+                    "A user with this email already exists.",
+                    code="EMAIL_ALREADY_EXISTS",
                 )
-            ],
-            "first_name": [
-                ErrorDetail(
-                    "This field is required.",
-                    code="required",
-                )
-            ],
+            ]
         }
 
     Example output:
 
         {
-            "phone_number": [
+            "email": [
                 {
-                    "message": "A user with this phone number already exists.",
-                    "code": "unique",
+                    "message": "A user with this email already exists.",
+                    "code": "EMAIL_ALREADY_EXISTS",
                 }
-            ],
-            "first_name": [
-                {
-                    "message": "This field is required.",
-                    "code": "required",
-                }
-            ],
+            ]
         }
     """
+
     if isinstance(data, Mapping):
         return {
             str(field): normalize_error_value(value) for field, value in data.items()
@@ -134,6 +137,30 @@ def normalize_errors(
     }
 
 
+def remove_api_metadata(
+    data: Any,
+) -> Any:
+    """
+    Remove top-level API metadata before converting
+    validation errors.
+
+    The exception handler adds:
+
+        {
+            "code": "...",
+            ...
+        }
+
+    That code belongs to the API response itself and
+    must never become a field-level validation error.
+    """
+
+    if not isinstance(data, Mapping):
+        return data
+
+    return {key: value for key, value in data.items() if key not in API_METADATA_KEYS}
+
+
 def extract_message(
     data: Any,
     *,
@@ -141,17 +168,8 @@ def extract_message(
 ) -> str:
     """
     Extract the top-level API message.
-
-    For success responses:
-        1. Explicit message
-        2. Generic success message
-
-    For error responses:
-        1. Explicit message
-        2. Detail
-        3. Validation failed
-        4. Generic error
     """
+
     if isinstance(data, Mapping):
         message = data.get("message")
 
@@ -184,10 +202,8 @@ def extract_code(
 ) -> str:
     """
     Extract the top-level API response code.
-
-    Explicit ``code`` values provided by the view or exception handler
-    always take priority.
     """
+
     if isinstance(data, Mapping):
         code = data.get("code")
 
@@ -207,25 +223,13 @@ def extract_code(
     return UNKNOWN_ERROR_CODE
 
 
-def extract_data(data: Any) -> Any:
+def extract_data(
+    data: Any,
+) -> Any:
     """
-    Extract the actual API data from a successful response.
-
-    If the response contains a ``data`` key, that value is returned.
-
-    This allows views to return either:
-
-        Response(serializer.data)
-
-    or:
-
-        Response({
-            "message": "...",
-            "data": serializer.data,
-        })
-
-    without creating duplicated/nested data structures.
+    Extract the actual API data.
     """
+
     if isinstance(data, Mapping) and "data" in data:
         return data["data"]
 
@@ -236,7 +240,7 @@ class ApiRenderer(JSONRenderer):
     """
     Global JSON renderer for the API.
 
-    Success response:
+    Success:
 
         {
             "success": true,
@@ -246,18 +250,18 @@ class ApiRenderer(JSONRenderer):
             "errors": null
         }
 
-    Error response:
+    Error:
 
         {
             "success": false,
             "code": "VALIDATION_ERROR",
-            "message": "Validation failed.",
+            "message": "...",
             "data": [],
             "errors": {
-                "phone_number": [
+                "email": [
                     {
                         "message": "...",
-                        "code": "unique"
+                        "code": "EMAIL_ALREADY_EXISTS"
                     }
                 ]
             }
@@ -273,8 +277,9 @@ class ApiRenderer(JSONRenderer):
         renderer_context: dict[str, Any] | None = None,
     ) -> bytes:
         """
-        Render every API response using the project's standard structure.
+        Render every API response using the standard envelope.
         """
+
         if renderer_context is None:
             return super().render(
                 data,
@@ -283,20 +288,23 @@ class ApiRenderer(JSONRenderer):
             )
 
         response = renderer_context["response"]
+
         status_code = response.status_code
 
-        # ---------------------------------------------------------------------
-        # 204 No Content
-        # ---------------------------------------------------------------------
+        # ================================================================
+        # 204 NO CONTENT
+        # ================================================================
 
         if status_code == 204:
             return b""
 
-        success = is_success_status(status_code)
+        success = is_success_status(
+            status_code,
+        )
 
-        # ---------------------------------------------------------------------
-        # Success
-        # ---------------------------------------------------------------------
+        # ================================================================
+        # SUCCESS
+        # ================================================================
 
         if success:
             payload = {
@@ -319,9 +327,13 @@ class ApiRenderer(JSONRenderer):
                 renderer_context,
             )
 
-        # ---------------------------------------------------------------------
-        # Error
-        # ---------------------------------------------------------------------
+        # ================================================================
+        # ERROR
+        # ================================================================
+
+        error_data = remove_api_metadata(
+            data,
+        )
 
         payload = {
             "success": False,
@@ -334,7 +346,9 @@ class ApiRenderer(JSONRenderer):
                 success=False,
             ),
             "data": [],
-            "errors": normalize_errors(data),
+            "errors": normalize_errors(
+                error_data,
+            ),
         }
 
         return super().render(

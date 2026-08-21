@@ -5,13 +5,7 @@
 
 import { apiClient, endpoints } from "@/features/api/lib";
 
-import {
-	LoginFormValues,
-	LoginHistory,
-	LoginResponse,
-	RegisterFormValues,
-	RegisterResponse,
-} from "../types";
+import { LoginFormValues, LoginHistory, LoginResponse } from "../types";
 
 export const authApi = {
 	myLoginHistory: () => {
@@ -22,7 +16,9 @@ export const authApi = {
 		return apiClient.post<LoginResponse>(endpoints.auth.login, data);
 	},
 
-	register: (data: RegisterFormValues) => {
-		return apiClient.post<RegisterResponse>(endpoints.auth.register, data);
+	logout: ({ refresh }: { refresh: string }) => {
+		return apiClient.post(endpoints.auth.logout, {
+			refresh,
+		});
 	},
 };

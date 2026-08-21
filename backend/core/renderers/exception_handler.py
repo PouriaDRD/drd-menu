@@ -1,8 +1,9 @@
 import logging
 from typing import Any
 
-from django.db import IntegrityError
 from django.utils.translation import gettext
+from django.db import IntegrityError
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# API error codes
+# API ERROR CODES
 # =============================================================================
 
 VALIDATION_ERROR = "VALIDATION_ERROR"
@@ -31,11 +32,12 @@ def get_exception_code(
     response: Response,
 ) -> str:
     """
-    Return a stable API-level error code based on the HTTP status code.
+    Return a stable API-level error code.
 
-    These codes are intended for frontend logic and should not depend
-    on translated human-readable messages.
+    These codes are intended for frontend logic and
+    must not depend on translated messages.
     """
+
     status_code = response.status_code
 
     if status_code == status.HTTP_400_BAD_REQUEST:
@@ -68,14 +70,18 @@ def get_request_context(
     """
     Extract safe request information for logging.
     """
+
     request = context.get("request")
     view = context.get("view")
+    exception = context.get("exception")
 
     return {
         "view": (view.__class__.__name__ if view is not None else "UnknownView"),
         "method": (request.method if request is not None else "UNKNOWN"),
         "path": (request.path if request is not None else "UNKNOWN"),
-        "exception_type": type(context.get("exception", Exception())).__name__,
+        "exception_type": (
+            type(exception).__name__ if exception is not None else "UnknownException"
+        ),
     }
 
 
@@ -84,46 +90,53 @@ def custom_exception_handler(
     context: dict[str, Any],
 ) -> Response | None:
     """
-    Centralized exception handler for the API.
+    Centralized exception handler.
 
     Responsibilities:
 
-    - Delegate standard DRF exceptions to DRF.
-    - Add a stable API-level error code.
+    - Delegate DRF exceptions to DRF.
+    - Add stable API-level error codes.
     - Convert IntegrityError into HTTP 409.
     - Convert unexpected exceptions into HTTP 500.
-    - Keep internal exception details out of API responses.
-    - Preserve detailed errors for frontend validation handling.
-
-    The final response envelope is handled by ApiRenderer.
+    - Preserve DRF field-level error codes.
+    - Keep internal exception details out of production responses.
     """
 
-    # =========================================================================
-    # Standard DRF exceptions
-    # =========================================================================
+    # ================================================================
+    # STANDARD DRF EXCEPTIONS
+    # ================================================================
 
-    response = exception_handler(exc, context)
+    response = exception_handler(
+        exc,
+        context,
+    )
 
     if response is not None:
-        response.data = {
-            "code": get_exception_code(
-                exc,
-                response,
-            ),
-            **(
-                response.data
-                if isinstance(response.data, dict)
-                else {
-                    "detail": response.data,
-                }
-            ),
-        }
+        existing_data = response.data
+
+        if isinstance(existing_data, dict):
+            response.data = {
+                "code": get_exception_code(
+                    exc,
+                    response,
+                ),
+                **existing_data,
+            }
+
+        else:
+            response.data = {
+                "code": get_exception_code(
+                    exc,
+                    response,
+                ),
+                "detail": existing_data,
+            }
 
         return response
 
-    # =========================================================================
-    # Logging context
-    # =========================================================================
+    # ================================================================
+    # LOGGING CONTEXT
+    # ================================================================
 
     log_context = get_request_context(
         {
@@ -132,9 +145,9 @@ def custom_exception_handler(
         },
     )
 
-    # =========================================================================
-    # Database integrity errors
-    # =========================================================================
+    # ================================================================
+    # DATABASE INTEGRITY ERROR
+    # ================================================================
 
     if isinstance(exc, IntegrityError):
         logger.warning(
@@ -151,9 +164,9 @@ def custom_exception_handler(
             status=status.HTTP_409_CONFLICT,
         )
 
-    # =========================================================================
-    # Unexpected server errors
-    # =========================================================================
+    # ================================================================
+    # UNEXPECTED SERVER ERROR
+    # ================================================================
 
     logger.error(
         "Unhandled exception in API request.",
@@ -164,7 +177,7 @@ def custom_exception_handler(
     return Response(
         {
             "code": INTERNAL_SERVER_ERROR,
-            "detail": gettext("A server error occurred. Please contact support."),
+            "detail": gettext("A server error occurred. " "Please contact support."),
         },
         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )

@@ -1,18 +1,25 @@
-import { ApiResponse } from "@/features/api/types";
+import type { ApiResponse } from "@/features/api/types";
 import { getSession, refreshAccessToken } from "@/features/auth/actions";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_API_URL?.trim() ?? "";
 
-type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
 interface RequestProps {
 	url: string;
+
 	method: HttpMethod;
+
 	body?: unknown;
+
 	params?: Record<string, string | number | boolean | undefined>;
+
 	init?: RequestInit;
+
 	timeout?: number;
+
 	isMultipart?: boolean;
+
 	retry?: boolean;
 }
 
@@ -31,55 +38,52 @@ class ApiClient {
 			body,
 			params,
 			init,
-			timeout = 60000, // 60 seconds
+			timeout = 60000,
 			isMultipart = false,
 			retry = true,
 		} = props;
 
 		const controller = new AbortController();
+
 		const timer = setTimeout(() => controller.abort(), timeout);
 
 		try {
 			const finalUrl = buildApiUrl(url, params);
 
-			const headers: Record<string, string> = {
-				...(init?.headers as Record<string, string>),
-			};
+			const headers = new Headers(init?.headers);
 
-			// Add auth token automatically
+			// =====================================================
+			// AUTHORIZATION
+			// =====================================================
+
 			const token = await this.getToken();
+
 			if (token) {
-				headers["Authorization"] = `Bearer ${token}`;
+				headers.set("Authorization", `Bearer ${token}`);
 			}
 
-			// Content-Type handling
+			// =====================================================
+			// CONTENT TYPE
+			// =====================================================
+
 			if (!isMultipart) {
-				headers["Content-Type"] = "application/json";
+				headers.set("Content-Type", "application/json");
 			}
 
 			const response = await fetch(finalUrl, {
+				...init,
 				method,
 				headers,
 				signal: controller.signal,
 				body: this.buildBody(body, isMultipart),
-				...init,
 			});
 
 			clearTimeout(timer);
 
-			//Handle Too Many Requests (429)
-			if (response.status === 429) {
-				return {
-					success: false,
-					message: "درخواست بیش از حد مجاز است",
+			// =====================================================
+			// UNAUTHORIZED
+			// =====================================================
 
-					errors: "لطفا چند لحظه بعد دوباره تلاش کنید",
-				};
-			}
-
-			// =========================
-			// Handle Unauthorized (401)
-			// =========================
 			if (response.status === 401 && retry) {
 				const refreshed = await this.refreshToken();
 
@@ -97,33 +101,87 @@ class ApiClient {
 				}
 			}
 
-			return await response.json();
-		} catch (err: unknown) {
+			// =====================================================
+			// EMPTY RESPONSE
+			// =====================================================
+
+			if (response.status === 204) {
+				return {
+					success: true,
+					code: "SUCCESS",
+					message: "Operation completed successfully.",
+					data: null as T,
+					errors: null,
+				};
+			}
+
+			// =====================================================
+			// JSON RESPONSE
+			// =====================================================
+
+			const data: unknown = await response.json();
+
+			return normalizeApiResponse<T>(data, response.status);
+		} catch (error: unknown) {
 			clearTimeout(timer);
 
 			if (process.env.NODE_ENV === "development") {
-				console.error("Error[apiClient.request]:", err);
+				console.error("Error[apiClient.request]:", error);
 			}
 
 			const errorName =
-				err instanceof Error
-					? err.name
-					: typeof err === "object" && err !== null && "name" in err
-						? String((err as { name?: unknown }).name)
+				error instanceof Error
+					? error.name
+					: typeof error === "object" &&
+						  error !== null &&
+						  "name" in error
+						? String(
+								(
+									error as {
+										name?: unknown;
+									}
+								).name,
+							)
 						: undefined;
+
+			// =====================================================
+			// TIMEOUT
+			// =====================================================
 
 			if (errorName === "AbortError") {
 				return {
 					success: false,
-					message: "درخواست بیش از حد طول کشید",
-					errors: "درخواست بیش از حد طول کشید",
+					code: "REQUEST_TIMEOUT",
+					message: "درخواست بیش از حد طول کشید.",
+					data: [],
+					errors: {
+						request: [
+							{
+								message: "درخواست بیش از حد طول کشید.",
+								code: "REQUEST_TIMEOUT",
+							},
+						],
+					},
 				};
 			}
 
+			// =====================================================
+			// NETWORK ERROR
+			// =====================================================
+
 			return {
 				success: false,
-				message: "خطای ناخواسته رخ داده است",
-				errors: "خطای ناخواسته رخ داده است",
+				code: "NETWORK_ERROR",
+				message: "ارتباط با سرور برقرار نشد.",
+				data: [],
+				errors: {
+					request: [
+						{
+							message: "ارتباط با سرور برقرار نشد.",
+							code: "NETWORK_ERROR",
+						},
+					],
+				},
 			};
 		}
 	}
@@ -133,7 +191,12 @@ class ApiClient {
 	// =========================================================
 
 	get<T>(url: string, params?: RequestProps["params"], init?: RequestInit) {
-		return this.request<T>({ url, method: "GET", params, init });
+		return this.request<T>({
+			url,
+			method: "GET",
+			params,
+			init,
+		});
 	}
 
 	post<T>(
@@ -151,55 +214,55 @@ class ApiClient {
 		});
 	}
 
-	put<T>(url: string, body?: unknown, init?: RequestInit) {
-		return this.request<T>({ url, method: "PUT", body, init });
-	}
-
 	patch<T>(url: string, body?: unknown, init?: RequestInit) {
-		return this.request<T>({ url, method: "PATCH", body, init });
+		return this.request<T>({
+			url,
+			method: "PATCH",
+			body,
+			init,
+		});
 	}
 
 	delete<T>(url: string, init?: RequestInit) {
-		return this.request<T>({ url, method: "DELETE", init });
+		return this.request<T>({
+			url,
+			method: "DELETE",
+			init,
+		});
 	}
 
 	// =========================================================
 	// TOKEN
 	// =========================================================
 
-	/**
-	 * Simple helper to get cookies (Next.js compatible client-side)
-	 */
 	private async getToken(): Promise<string | null> {
 		const token = await getSession();
+
 		return token || null;
 	}
 
-	/**
-	 * Refresh access token automatically
-	 */
 	private async refreshToken(): Promise<boolean> {
 		try {
 			const newAccess = await refreshAccessToken();
 
-			if (newAccess) {
-				return true;
-			}
-
-			return false;
+			return Boolean(newAccess);
 		} catch {
 			return false;
 		}
 	}
 
 	// =========================================================
-	// BODY BUILDER
+	// BODY
 	// =========================================================
 
-	private buildBody(body: unknown, isMultipart?: boolean) {
-		if (!body) return undefined;
+	private buildBody(
+		body: unknown,
+		isMultipart = false,
+	): BodyInit | undefined {
+		if (body === undefined || body === null) {
+			return undefined;
+		}
 
-		// FormData (file upload)
 		if (isMultipart && body instanceof FormData) {
 			return body;
 		}
@@ -208,24 +271,88 @@ class ApiClient {
 	}
 }
 
+// =============================================================
+// NORMALIZE API RESPONSE
+// =============================================================
+
+function normalizeApiResponse<T>(
+	data: unknown,
+	statusCode: number,
+): ApiResponse<T> {
+	if (isApiResponse<T>(data)) {
+		return data;
+	}
+
+	if (statusCode >= 200 && statusCode <= 299) {
+		return {
+			success: true,
+			code: "SUCCESS",
+			message: "Operation completed successfully.",
+			data: data as T,
+			errors: null,
+		};
+	}
+
+	return {
+		success: false,
+		code: "UNKNOWN_ERROR",
+		message: "An unexpected error occurred.",
+		data: [],
+		errors: {
+			request: [
+				{
+					message: "An unexpected error occurred.",
+					code: "UNKNOWN_ERROR",
+				},
+			],
+		},
+	};
+}
+
+// =============================================================
+// TYPE GUARD
+// =============================================================
+
+function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
+	if (typeof value !== "object" || value === null) {
+		return false;
+	}
+
+	const object = value as Record<string, unknown>;
+
+	return (
+		typeof object.success === "boolean" &&
+		typeof object.code === "string" &&
+		typeof object.message === "string" &&
+		"data" in object &&
+		"errors" in object
+	);
+}
+
+// =============================================================
+// EXPORT
+// =============================================================
+
 export const apiClient = new ApiClient();
 
-/**
- * Build final URL safely
- */
+// =============================================================
+// BUILD URL
+// =============================================================
+
 export function buildApiUrl(
 	path: string,
 	params?: Record<string, string | number | boolean | undefined>,
 ): string {
 	const base = BASE_URL.replace(/\/+$/, "");
 
-	const cleanPath = path.replace(/^\/+/, "").replace(/\/+$/, "");
-
 	const isAbsolute = /^https?:\/\//i.test(path);
 
 	const url = isAbsolute
 		? new URL(path)
-		: new URL(`${cleanPath}/`, `${base}/`);
+		: new URL(
+				`${path.replace(/^\/+/, "").replace(/\/+$/, "")}/`,
+				`${base}/`,
+			);
 
 	if (params) {
 		Object.entries(params).forEach(([key, value]) => {

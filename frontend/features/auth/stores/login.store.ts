@@ -8,14 +8,14 @@ import { LoginStoreState } from "../types/login.type";
 export const useLoginStore = create<LoginStoreState>()(
 	persist(
 		(set) => ({
-			email: "",
+			phone_number: "",
 			password: "",
 
 			set: (patch) => set((state) => ({ ...state, ...patch })),
 
 			reset: () =>
 				set({
-					email: "",
+					phone_number: "",
 					password: "",
 				}),
 
@@ -39,7 +39,7 @@ export const useLoginStore = create<LoginStoreState>()(
 
 			// Only save these states to storage (Not Password)
 			partialize: (state) => ({
-				email: state.email,
+				email: state.phone_number,
 			}),
 			onRehydrateStorage: () => (state) => {
 				state?.setHasHydrated(true);

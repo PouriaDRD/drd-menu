@@ -4,6 +4,6 @@ export const queryKeys = {
 	},
 
 	accounts: {
-		me: ["accounts", "my-profile"],
+		myProfile: ["accounts", "my-profile"],
 	},
 };

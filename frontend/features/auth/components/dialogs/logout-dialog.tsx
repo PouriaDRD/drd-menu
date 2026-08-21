@@ -1,3 +1,6 @@
+"use client";
+
+import { VariantProps } from "class-variance-authority";
 import { LogOut } from "lucide-react";
 
 import {
@@ -13,22 +16,38 @@ import {
 	Button,
 	Spinner,
 } from "@/components/ui";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/features/shared/utils";
 
 import { useLogout } from "../../hooks";
 
 interface Props {
-	collapsed: boolean;
+	collapsed?: boolean;
+	className?: string;
+	size?: VariantProps<typeof buttonVariants>["size"];
+	variant?: VariantProps<typeof buttonVariants>["variant"];
 }
 
-export function LogoutDialog({ collapsed }: Props) {
+export function LogoutDialog(props: Props) {
+	const {
+		className,
+		size = "default",
+		variant = "outline",
+		collapsed = false,
+	} = props;
+
 	const { handleLogout, isLoading } = useLogout();
 
 	return (
 		<AlertDialog>
-			<AlertDialogTrigger>
+			<AlertDialogTrigger asChild>
 				<Button
-					variant="ghost"
-					className={collapsed ? "size-10 p-0" : "justify-start"}>
+					size={size}
+					variant={variant}
+					className={cn(
+						`${collapsed ? "size-10 p-0" : ""}`,
+						className,
+					)}>
 					{isLoading ? (
 						<Spinner className="size-4 shrink-0 text-destructive" />
 					) : (
@@ -56,8 +75,8 @@ export function LogoutDialog({ collapsed }: Props) {
 					<AlertDialogCancel>انصراف</AlertDialogCancel>
 
 					<AlertDialogAction
-						onClick={handleLogout}
-						className="bg-destructive hover:bg-destructive/90">
+						variant={"destructive"}
+						onClick={handleLogout}>
 						خروج
 					</AlertDialogAction>
 				</AlertDialogFooter>

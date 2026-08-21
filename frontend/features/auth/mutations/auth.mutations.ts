@@ -10,9 +10,9 @@ export function useLogin() {
 	});
 }
 
-export function useRegister() {
+export function useLogoutMutation() {
 	return useMutation({
-		mutationFn: authApi.register,
+		mutationFn: authApi.logout,
 	});
 }
 

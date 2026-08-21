@@ -27,5 +27,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-	matcher: ["/user/:path*"],
+	matcher: ["/panel/:path*"],
 };
