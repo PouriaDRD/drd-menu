@@ -1,26 +1,721 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-	--background: #ffffff;
-	--foreground: #171717;
-}
+@theme {
+	--font-peyda: var(--font-peyda);
+	--font-iran-yekan-x: var(--font-iran-yekan-x);
 
-@theme inline {
-	--color-background: var(--background);
-	--color-foreground: var(--foreground);
-	--font-sans: var(--font-geist-sans);
-	--font-mono: var(--font-geist-mono);
-}
+	--animate-shimmer: shimmer 1.8s linear infinite;
 
-@media (prefers-color-scheme: dark) {
-	:root {
-		--background: #0a0a0a;
-		--foreground: #ededed;
+	@keyframes shimmer {
+		100% {
+			transform: translateX(200%);
+		}
 	}
 }
 
-body {
-	background: var(--background);
-	color: var(--foreground);
-	font-family: Arial, Helvetica, sans-serif;
+@custom-variant dark (&:is(.dark *));
+
+/* =========================================================
+   LIGHT THEME
+   ========================================================= */
+
+:root {
+	/* =======================================================
+	   Base
+	   ======================================================= */
+
+	--background: #f7f8fb;
+	--foreground: #111827;
+
+	/* =======================================================
+	   Surfaces
+	   ======================================================= */
+
+	--card: #ffffff;
+	--card-foreground: #111827;
+
+	--popover: #ffffff;
+	--popover-foreground: #111827;
+
+	/* =======================================================
+	   Brand
+	   Sapphire / Indigo
+	   ======================================================= */
+
+	--primary: #1447e6;
+	--primary-foreground: #ffffff;
+
+	/* =======================================================
+	   Secondary
+	   ======================================================= */
+
+	--secondary: #f1f3f7;
+	--secondary-foreground: #273449;
+
+	--muted: #f1f3f7;
+	--muted-foreground: #667085;
+
+	--accent: #eef4ff;
+	--accent-foreground: #1d4ed8;
+
+	/* =======================================================
+	   Semantic
+	   ======================================================= */
+
+	--destructive: #dc2626;
+	--destructive-foreground: #ffffff;
+
+	/* =======================================================
+	   Controls
+	   Intentionally different from card/background
+	   ======================================================= */
+
+	--border: #e2e6ed;
+	--input: #d7dce5;
+	--ring: #87a5ef;
+
+	/* =======================================================
+	   Finance
+	   ======================================================= */
+
+	--income: #16a34a;
+	--income-foreground: #ffffff;
+
+	--expense: #dc2626;
+	--expense-foreground: #ffffff;
+
+	--pending: #d97706;
+	--pending-foreground: #ffffff;
+
+	--info: #1447e6;
+	--info-foreground: #ffffff;
+
+	/* =======================================================
+	   Finance Soft Backgrounds
+	   Useful for badges / stat cards / transaction types
+	   ======================================================= */
+
+	--income-soft: #ecfdf3;
+	--expense-soft: #fef2f2;
+	--pending-soft: #fffbeb;
+	--info-soft: #eff6ff;
+
+	/* =======================================================
+	   Charts
+	   ======================================================= */
+
+	--chart-1: #1447e6;
+	--chart-2: #16a34a;
+	--chart-3: #8b5cf6;
+	--chart-4: #d97706;
+	--chart-5: #dc2626;
+
+	/* =======================================================
+	   Sidebar
+	   Slightly separated from main background
+	   ======================================================= */
+
+	--sidebar: #ffffff;
+	--sidebar-foreground: #344054;
+
+	--sidebar-primary: #1447e6;
+	--sidebar-primary-foreground: #ffffff;
+
+	--sidebar-accent: #eef4ff;
+	--sidebar-accent-foreground: #1d4ed8;
+
+	--sidebar-border: #e2e6ed;
+	--sidebar-ring: #1447e6;
+
+	/* =======================================================
+	   Radius
+	   ======================================================= */
+
+	--radius: 0.75rem;
+
+	/* =======================================================
+	   Shadows
+	   Very subtle
+	   ======================================================= */
+
+	--shadow-2xs: 0 1px 2px rgba(16, 24, 40, 0.02);
+	--shadow-xs: 0 1px 3px rgba(16, 24, 40, 0.04);
+	--shadow-sm: 0 2px 6px rgba(16, 24, 40, 0.05);
+	--shadow: 0 4px 12px rgba(16, 24, 40, 0.06);
+	--shadow-md: 0 8px 20px rgba(16, 24, 40, 0.07);
+	--shadow-lg: 0 14px 32px rgba(16, 24, 40, 0.08);
+	--shadow-xl: 0 20px 44px rgba(16, 24, 40, 0.1);
+	--shadow-2xl: 0 28px 64px rgba(16, 24, 40, 0.12);
+
+	/* =======================================================
+	   Typography
+	   ======================================================= */
+
+	--tracking-normal: -0.015em;
+}
+
+/* =========================================================
+   DARK THEME
+   ========================================================= */
+
+.dark {
+	/* =======================================================
+	   Base
+	   ======================================================= */
+
+	--background: #0b0f17;
+	--foreground: #e8edf5;
+
+	/* =======================================================
+	   Surfaces
+	   ======================================================= */
+
+	--card: #111722;
+	--card-foreground: #e8edf5;
+
+	--popover: #151c28;
+	--popover-foreground: #e8edf5;
+
+	/* =======================================================
+	   Brand
+	   Same Sapphire / Indigo family as Light Theme
+	   ======================================================= */
+
+	--primary: #3b64e8;
+	--primary-foreground: #ffffff;
+
+	/* =======================================================
+	   Secondary
+	   ======================================================= */
+
+	--secondary: #171e2a;
+	--secondary-foreground: #d7deea;
+
+	--muted: #151c27;
+	--muted-foreground: #929db0;
+
+	--accent: #17243a;
+	--accent-foreground: #6f96ff;
+
+	/* =======================================================
+	   Semantic
+	   ======================================================= */
+
+	--destructive: #ef4444;
+	--destructive-foreground: #ffffff;
+
+	/* =======================================================
+	   Controls
+	   ======================================================= */
+
+	--border: #232d3b;
+	--input: #1c2633;
+	--ring: #5578dc;
+
+	/* =======================================================
+	   Finance
+	   Same semantic color families as Light Theme
+	   ======================================================= */
+
+	--income: #22c55e;
+	--income-foreground: #052e16;
+
+	--expense: #ef4444;
+	--expense-foreground: #ffffff;
+
+	--pending: #f59e0b;
+	--pending-foreground: #451a03;
+
+	--info: #3b82f6;
+	--info-foreground: #eff6ff;
+
+	/* =======================================================
+	   Finance Soft Backgrounds
+	   Same semantic colors as Light Theme,
+	   adapted for dark surfaces
+	   ======================================================= */
+
+	--income-soft: #10271a;
+	--expense-soft: #2a171a;
+	--pending-soft: #2a210f;
+	--info-soft: #12223a;
+
+	/* =======================================================
+	   Charts
+	   ======================================================= */
+
+	--chart-1: #3b64e8;
+	--chart-2: #22c55e;
+	--chart-3: #a78bfa;
+	--chart-4: #f59e0b;
+	--chart-5: #ef4444;
+
+	/* =======================================================
+	   Sidebar
+	   Slightly separated from main background
+	   ======================================================= */
+
+	--sidebar: #0e141e;
+	--sidebar-foreground: #cbd5e1;
+
+	--sidebar-primary: #3b64e8;
+	--sidebar-primary-foreground: #ffffff;
+
+	--sidebar-accent: #17243a;
+	--sidebar-accent-foreground: #6f96ff;
+
+	--sidebar-border: #202a38;
+	--sidebar-ring: #3b64e8;
+
+	/* =======================================================
+	   Shadows
+	   ======================================================= */
+
+	--shadow-2xs: 0 1px 2px rgba(0, 0, 0, 0.22);
+	--shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.27);
+	--shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.3);
+	--shadow: 0 4px 12px rgba(0, 0, 0, 0.33);
+	--shadow-md: 0 8px 20px rgba(0, 0, 0, 0.36);
+	--shadow-lg: 0 14px 32px rgba(0, 0, 0, 0.4);
+	--shadow-xl: 0 20px 44px rgba(0, 0, 0, 0.44);
+	--shadow-2xl: 0 28px 64px rgba(0, 0, 0, 0.5);
+}
+
+/* =========================================================
+   TAILWIND THEME TOKENS
+   ========================================================= */
+
+@theme inline {
+	/* Fonts */
+	--font-sans: var(--font-sans);
+	--font-mono: var(--font-geist-mono);
+	--font-heading: var(--font-iran-yekan-x);
+	--font-peyda: var(--font-peyda);
+	--font-iran-yekan-x: var(--font-iran-yekan-x);
+
+	/* =======================================================
+	   Colors
+	   ======================================================= */
+
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+
+	/* Finance */
+	--color-income: var(--income);
+	--color-income-foreground: var(--income-foreground);
+
+	--color-expense: var(--expense);
+	--color-expense-foreground: var(--expense-foreground);
+
+	--color-pending: var(--pending);
+	--color-pending-foreground: var(--pending-foreground);
+
+	--color-info: var(--info);
+	--color-info-foreground: var(--info-foreground);
+
+	/* Finance soft */
+	--color-income-soft: var(--income-soft);
+	--color-expense-soft: var(--expense-soft);
+	--color-pending-soft: var(--pending-soft);
+	--color-info-soft: var(--info-soft);
+
+	/* Charts */
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+
+	/* Sidebar */
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-ring: var(--sidebar-ring);
+
+	/* =======================================================
+	   Radius
+	   ======================================================= */
+
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+
+	/* =======================================================
+	   Shadows
+	   ======================================================= */
+
+	--shadow-2xs: var(--shadow-2xs);
+	--shadow-xs: var(--shadow-xs);
+	--shadow-sm: var(--shadow-sm);
+	--shadow: var(--shadow);
+	--shadow-md: var(--shadow-md);
+	--shadow-lg: var(--shadow-lg);
+	--shadow-xl: var(--shadow-xl);
+	--shadow-2xl: var(--shadow-2xl);
+
+	/* =======================================================
+	   Tracking
+	   ======================================================= */
+
+	--tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+	--tracking-tight: calc(var(--tracking-normal) - 0.025em);
+	--tracking-normal: var(--tracking-normal);
+	--tracking-wide: calc(var(--tracking-normal) + 0.025em);
+	--tracking-wider: calc(var(--tracking-normal) + 0.05em);
+	--tracking-widest: calc(var(--tracking-normal) + 0.1em);
+}
+
+/* =========================================================
+   BASE
+   ========================================================= */
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+
+		scroll-behavior: smooth;
+		scroll-padding-top: 60px;
+	}
+
+	html {
+		@apply font-sans;
+	}
+
+	body {
+		@apply bg-background text-foreground font-iran-yekan-x antialiased;
+
+		letter-spacing: var(--tracking-normal);
+		font-feature-settings: "ss02", "cv01";
+	}
+
+	button:not(:disabled),
+	[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
+}
+
+/* =========================================================
+   Persian Numerals / Typography
+   ========================================================= */
+
+.ss02 {
+	font-feature-settings: "ss02";
+	-moz-font-feature-settings: "ss02";
+	-webkit-font-feature-settings: "ss02";
+}
+
+/* =========================================================
+   SONNER TOASTS
+   ========================================================= */
+
+[data-sonner-toaster] {
+	--toast-width: 380px;
+}
+
+/* =========================================================
+   BASE
+   ========================================================= */
+
+[data-sonner-toast] {
+	border-radius: calc(var(--radius) + 2px) !important;
+	border: 1px solid var(--border) !important;
+
+	font-family: var(--font-iran-yekan-x) !important;
+
+	box-shadow: var(--shadow-md) !important;
+}
+
+/* =========================================================
+   TYPOGRAPHY
+   ========================================================= */
+
+[data-sonner-toast] [data-title] {
+	font-size: 0.875rem;
+	font-weight: 700 !important;
+	line-height: 1.5;
+}
+
+[data-sonner-toast] [data-description] {
+	margin-top: 2px;
+
+	font-size: 0.75rem;
+	font-weight: 500 !important;
+	line-height: 1.6;
+}
+
+/* =========================================================
+   DEFAULT
+   ========================================================= */
+
+[data-sonner-toast][data-type="default"] {
+	background: var(--popover) !important;
+	color: var(--foreground) !important;
+
+	border-color: var(--border) !important;
+}
+
+[data-sonner-toast][data-type="default"] [data-title] {
+	color: var(--foreground) !important;
+}
+
+[data-sonner-toast][data-type="default"] [data-description] {
+	color: var(--muted-foreground) !important;
+}
+
+[data-sonner-toast][data-type="default"] [data-icon] {
+	color: var(--muted-foreground) !important;
+}
+
+/* =========================================================
+   SUCCESS
+   ========================================================= */
+
+[data-sonner-toast][data-type="success"] {
+	background: #f0fdf4 !important;
+	border-color: #bbf7d0 !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-title] {
+	color: #15803d !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-description] {
+	color: #3f7f55 !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-icon] {
+	color: #16a34a !important;
+}
+
+/* =========================================================
+   INFO
+   ========================================================= */
+
+[data-sonner-toast][data-type="info"] {
+	background: #eff6ff !important;
+	border-color: #bfdbfe !important;
+}
+
+[data-sonner-toast][data-type="info"] [data-title] {
+	color: #1d4ed8 !important;
+}
+
+[data-sonner-toast][data-type="info"] [data-description] {
+	color: #476b9e !important;
+}
+
+[data-sonner-toast][data-type="info"] [data-icon] {
+	color: #1447e6 !important;
+}
+
+/* =========================================================
+   WARNING
+   ========================================================= */
+
+[data-sonner-toast][data-type="warning"] {
+	background: #fffbeb !important;
+	border-color: #fde68a !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-title] {
+	color: #b45309 !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-description] {
+	color: #8b672e !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-icon] {
+	color: #d97706 !important;
+}
+
+/* =========================================================
+   ERROR
+   ========================================================= */
+
+[data-sonner-toast][data-type="error"] {
+	background: #fef2f2 !important;
+	border-color: #fecaca !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-title] {
+	color: #b91c1c !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-description] {
+	color: #925050 !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-icon] {
+	color: #dc2626 !important;
+}
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+[data-sonner-toast][data-type="loading"] {
+	background: var(--muted) !important;
+	border-color: var(--border) !important;
+}
+
+[data-sonner-toast][data-type="loading"] [data-title] {
+	color: var(--foreground) !important;
+}
+
+[data-sonner-toast][data-type="loading"] [data-description] {
+	color: var(--muted-foreground) !important;
+}
+
+[data-sonner-toast][data-type="loading"] [data-icon] {
+	color: var(--primary) !important;
+}
+
+/* =========================================================
+   CLOSE BUTTON
+   ========================================================= */
+
+[data-sonner-toast] [data-close-button] {
+	background: transparent !important;
+	border: 0 !important;
+	color: currentColor !important;
+	opacity: 0.6;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+	background: rgba(0, 0, 0, 0.05) !important;
+	opacity: 1;
+}
+
+/* =========================================================
+   ACTION
+   ========================================================= */
+
+[data-sonner-toast] [data-button] {
+	background: var(--primary) !important;
+	color: var(--primary-foreground) !important;
+	border: 0 !important;
+
+	border-radius: calc(var(--radius) - 4px) !important;
+
+	font-weight: 700 !important;
+}
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+.dark [data-sonner-toast][data-type="success"] {
+	background: #0d2418 !important;
+	border-color: #185c34 !important;
+}
+
+.dark [data-sonner-toast][data-type="success"] [data-title] {
+	color: #4ade80 !important;
+}
+
+.dark [data-sonner-toast][data-type="success"] [data-description] {
+	color: #86b995 !important;
+}
+
+.dark [data-sonner-toast][data-type="success"] [data-icon] {
+	color: #22c55e !important;
+}
+
+/* ---------------------------------------------------------
+   INFO
+   --------------------------------------------------------- */
+
+.dark [data-sonner-toast][data-type="info"] {
+	background: #101f35 !important;
+	border-color: #234b7c !important;
+}
+
+.dark [data-sonner-toast][data-type="info"] [data-title] {
+	color: #60a5fa !important;
+}
+
+.dark [data-sonner-toast][data-type="info"] [data-description] {
+	color: #91a9c7 !important;
+}
+
+.dark [data-sonner-toast][data-type="info"] [data-icon] {
+	color: #60a5fa !important;
+}
+
+/* ---------------------------------------------------------
+   WARNING
+   --------------------------------------------------------- */
+
+.dark [data-sonner-toast][data-type="warning"] {
+	background: #291e0c !important;
+	border-color: #70500d !important;
+}
+
+.dark [data-sonner-toast][data-type="warning"] [data-title] {
+	color: #fbbf24 !important;
+}
+
+.dark [data-sonner-toast][data-type="warning"] [data-description] {
+	color: #c8aa70 !important;
+}
+
+.dark [data-sonner-toast][data-type="warning"] [data-icon] {
+	color: #f59e0b !important;
+}
+
+/* ---------------------------------------------------------
+   ERROR
+   --------------------------------------------------------- */
+
+.dark [data-sonner-toast][data-type="error"] {
+	background: #2a1417 !important;
+	border-color: #713038 !important;
+}
+
+.dark [data-sonner-toast][data-type="error"] [data-title] {
+	color: #f87171 !important;
+}
+
+.dark [data-sonner-toast][data-type="error"] [data-description] {
+	color: #c99499 !important;
+}
+
+.dark [data-sonner-toast][data-type="error"] [data-icon] {
+	color: #ef4444 !important;
 }
