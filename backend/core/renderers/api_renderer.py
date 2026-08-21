@@ -239,7 +239,7 @@ class ApiRenderer(JSONRenderer):
     Success response:
 
         {
-            "status": true,
+            "success": true,
             "code": "SUCCESS",
             "message": "...",
             "data": {...},
@@ -249,7 +249,7 @@ class ApiRenderer(JSONRenderer):
     Error response:
 
         {
-            "status": false,
+            "success": false,
             "code": "VALIDATION_ERROR",
             "message": "Validation failed.",
             "data": [],
@@ -300,7 +300,7 @@ class ApiRenderer(JSONRenderer):
 
         if success:
             payload = {
-                "status": True,
+                "success": True,
                 "code": extract_code(
                     data,
                     success=True,
@@ -324,7 +324,7 @@ class ApiRenderer(JSONRenderer):
         # ---------------------------------------------------------------------
 
         payload = {
-            "status": False,
+            "success": False,
             "code": extract_code(
                 data,
                 success=False,

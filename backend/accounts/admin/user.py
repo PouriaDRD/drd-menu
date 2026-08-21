@@ -20,6 +20,7 @@ class UserAdmin(BaseUserAdmin):
     list_display = [
         "phone_number",
         "full_name",
+        "role_badge",
         "status_badge",
         "last_login",
         "created_at",
@@ -111,48 +112,76 @@ class UserAdmin(BaseUserAdmin):
         ),
     )
 
-    @admin.display(description="Account", ordering="role")
-    def status_badge(self, obj: UserModel):
+    @admin.display(description="Role", ordering="role")
+    def role_badge(self, obj: UserModel):
         """
-        Display role, account status and verification state.
+        Display user role badge.
         """
 
-        role_icons: dict[str, str] = {
-            str(UserRole.SUPERUSER): "🔵",
-            str(UserRole.ADMIN): "🟢",
-            str(UserRole.USER): "⚪",
+        roles = {
+            str(UserRole.SUPERUSER): ("👑", "#7c3aed"),
+            str(UserRole.ADMIN): ("🛡️", "#2563eb"),
+            str(UserRole.USER): ("👤", "#6b7280"),
         }
 
-        status_colors: dict[str, str] = {
-            "active": "#16a34a",
-            "inactive": "#6b7280",
-            "banned": "#dc2626",
-        }
-
-        role = UserRole(obj.role).label
-        role_icon = role_icons.get(
+        icon, color = roles.get(
             str(obj.role),
-            "⚪",
+            ("❓", "#6b7280"),
         )
 
-        status = UserStatus(obj.status).label
-        status_color = status_colors.get(
-            str(obj.status),
-            "#6b7280",
-        )
+        try:
+            label = UserRole(obj.role).label
+        except ValueError:
+            label = "Unknown"
 
         return format_html(
             """
-            {} {}
-            ·
-            <span style="color:{};font-weight:600;">
-                {}
+            <span style="
+                color:{};
+                font-weight:600;
+            ">
+                {} {}
             </span>
             """,
-            role_icon,
-            role,
-            status_color,
-            status,
+            color,
+            icon,
+            label,
+        )
+
+    @admin.display(description="Status", ordering="status")
+    def status_badge(self, obj: UserModel):
+        """
+        Display account status badge.
+        """
+
+        statuses = {
+            str(UserStatus.ACTIVE): ("●", "#16a34a"),
+            str(UserStatus.INACTIVE): ("●", "#6b7280"),
+            str(UserStatus.BANNED): ("●", "#dc2626"),
+        }
+
+        icon, color = statuses.get(
+            str(obj.status),
+            ("●", "#6b7280"),
+        )
+
+        try:
+            label = UserStatus(obj.status).label
+        except ValueError:
+            label = "Unknown"
+
+        return format_html(
+            """
+            <span style="
+                color:{};
+                font-weight:600;
+            ">
+                {} {}
+            </span>
+            """,
+            color,
+            icon,
+            label,
         )
 
     def get_form(
