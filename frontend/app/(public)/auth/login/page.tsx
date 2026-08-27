@@ -1,33 +1,21 @@
 "use client";
 
-import Link from "next/link";
-
 import { PageLayout } from "@/components/layouts";
-import { Button } from "@/components/ui";
 import { useUser } from "@/features/accounts/context";
 import { LoginCard } from "@/features/auth/components/cards";
-import { GridShape } from "@/features/shared/components";
+import {
+	AlreadyLoggedIn,
+	GridShape,
+	LoadingCard,
+} from "@/features/shared/components";
 
-function LoginPage() {
+export default function LoginPage() {
 	const { user, isLoading } = useUser();
 
 	if (isLoading) {
-		return (
-			<PageLayout className="flex items-center justify-center relative">
-				<GridShape />
-				<p
-					suppressHydrationWarning
-					className="text-sm text-muted-foreground">
-					در حال بارگذاری...
-				</p>
-			</PageLayout>
-		);
+		return <LoadingCard />;
 	}
 
-	/**
-	 * If user is already authenticated,
-	 * redirect them away from register page.
-	 */
 	if (user) {
 		return (
 			<PageLayout className="flex items-center justify-center relative">
@@ -40,30 +28,7 @@ function LoginPage() {
 	return (
 		<PageLayout className="flex items-center justify-center relative">
 			<GridShape />
-			<LoginCard />
+			<LoginCard className="ring-0 border-0 bg-transparent shadow-none" />
 		</PageLayout>
-	);
-}
-
-export default LoginPage;
-
-/**
- * UI shown when user is already authenticated.
- */
-function AlreadyLoggedIn() {
-	return (
-		<div className="flex flex-col items-center gap-4 text-center bg-card shadow p-6 rounded-2xl">
-			<p
-				suppressHydrationWarning
-				className="text-sm text-muted-foreground">
-				شما قبلاً وارد شده‌اید و نیازی به ورود ندارید.
-			</p>
-
-			<Link href="/panel/dashboard">
-				<Button variant={"outline"} size={"sm"}>
-					بازگشت به پنل
-				</Button>
-			</Link>
-		</div>
 	);
 }

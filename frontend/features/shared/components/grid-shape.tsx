@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-function GridShape() {
+export function GridShape() {
 	return (
 		<>
 			<div className="absolute right-0 top-0 -z-1 w-full max-w-87.5 xl:max-w-112.5">
@@ -29,5 +29,3 @@ function GridShape() {
 		</>
 	);
 }
-
-export default GridShape;

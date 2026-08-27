@@ -7,7 +7,7 @@ interface AppVersionProps {
 	className?: string;
 }
 
-const AppVersion = (props: AppVersionProps) => {
+export const AppVersion = (props: AppVersionProps) => {
 	const appVersion: string = getAppVersion();
 
 	return (
@@ -21,5 +21,3 @@ const AppVersion = (props: AppVersionProps) => {
 		</div>
 	);
 };
-
-export default AppVersion;
