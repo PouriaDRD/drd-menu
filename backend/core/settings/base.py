@@ -6,6 +6,8 @@ from ..app_config import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+GEOIP_PATH = BASE_DIR / "geoip"
+
 SECRET_KEY = config.app.secret_key
 
 USE_SQLITE = config.database.use_sqlite
@@ -14,8 +16,10 @@ USE_SQLITE = config.database.use_sqlite
 AUTH_USER_MODEL = "accounts.UserModel"
 
 AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
+    "authentication.backends.LoginHistoryBackend",
+    # "django.contrib.auth.backends.ModelBackend",
 ]
+
 
 # ---------------------------------------------------------------
 # Installed Apps Configuration

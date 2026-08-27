@@ -1,14 +1,7 @@
 import re
 from rest_framework.exceptions import ValidationError
 
-PERSIAN_DIGITS = "۰۱۲۳۴۵۶۷۸۹"
-ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩"
-ENGLISH_DIGITS = "0123456789"
-
-DIGIT_TRANSLATION = str.maketrans(
-    PERSIAN_DIGITS + ARABIC_DIGITS,
-    ENGLISH_DIGITS + ENGLISH_DIGITS,
-)
+from .digits import normalize_digits
 
 
 def normalize_phone_number(phone: str) -> str:
@@ -24,8 +17,7 @@ def normalize_phone_number(phone: str) -> str:
     if not phone:
         raise ValidationError("Phone number is required.")
 
-    phone = phone.strip()
-    phone = phone.translate(DIGIT_TRANSLATION)
+    phone = normalize_digits(phone)
 
     phone = re.sub(r"[\s\-()]", "", phone)
 

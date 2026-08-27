@@ -13,4 +13,15 @@ class LoginHistoryRepository:
 
     @staticmethod
     def get_user_login_histories(user_id) -> QuerySet[LoginHistoryModel]:
-        return LoginHistoryModel.objects.filter(user_id=user_id).order_by("-created_at")
+        return (
+            LoginHistoryModel.objects.filter(
+                user_id=user_id,
+            )
+            .select_related(
+                "user",
+            )
+            .order_by(
+                "-created_at",
+                "-id",
+            )
+        )

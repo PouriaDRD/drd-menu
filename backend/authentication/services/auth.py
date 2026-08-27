@@ -8,7 +8,6 @@ from rest_framework.request import Request
 from rest_framework.exceptions import ValidationError
 
 from .token import TokenService
-from .login_history import LoginHistoryService
 from accounts.repositories import UserRepository
 from core.normalizers import normalize_phone_number
 
@@ -23,7 +22,6 @@ class AuthService:
 
     # Services
     token_service = TokenService
-    login_history_service = LoginHistoryService
 
     # Repositories
     user_repo = UserRepository
@@ -63,7 +61,6 @@ class AuthService:
                 return None
 
             cls.update_last_login(user)
-            cls.login_history_service.log_success(user, request)
 
             return cls.auth_response(user)
 
@@ -85,8 +82,6 @@ class AuthService:
             reason: Reason for login failure.
 
         """
-
-        cls.login_history_service.log_failed(phone_number, request, reason)
 
     @classmethod
     def auth_response(cls, user):
