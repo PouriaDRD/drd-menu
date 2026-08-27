@@ -1,57 +1,217 @@
 from django.contrib import admin
-from django.forms import ModelForm
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.forms import ChoiceField, ModelForm
 from django.http import HttpRequest
 from django.utils.html import format_html
-from django.forms import ModelForm, ChoiceField
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from accounts.models import UserModel
 from accounts.enums import UserRole, UserStatus
+from accounts.models import UserModel
 
 
 @admin.register(UserModel)
 class UserAdmin(BaseUserAdmin):
     """
     Admin configuration for UserModel.
+
+    The interface follows Django Admin's native visual language
+    and supports both light and dark themes.
     """
+
+    # =========================================================================
+    # General
+    # =========================================================================
 
     list_per_page = 50
 
-    list_display = [
-        "phone_number",
-        "full_name",
+    ordering = ("-created_at",)
+
+    # =========================================================================
+    # List
+    # =========================================================================
+
+    list_display = (
+        "user_display",
+        "phone_display",
         "role_badge",
         "status_badge",
-        "last_login",
-        "created_at",
-    ]
+        "last_login_display",
+        "created_at_display",
+    )
 
-    search_fields = [
+    list_filter = (
+        "role",
+        "status",
+        "created_at",
+    )
+
+    search_fields = (
         "phone_number",
         "first_name",
         "last_name",
-    ]
+    )
 
-    list_filter = [
-        "role",
-        "status",
-    ]
+    # =========================================================================
+    # Actions
+    # =========================================================================
 
-    ordering = [
-        "-created_at",
-    ]
+    actions = (
+        "activate_users",
+        "deactivate_users",
+        "ban_users",
+        "unban_users",
+    )
 
-    readonly_fields = [
+    # -------------------------------------------------------------------------
+    # Activate
+    # -------------------------------------------------------------------------
+
+    @admin.action(
+        description="Activate selected users",
+    )
+    def activate_users(
+        self,
+        request: HttpRequest,
+        queryset,
+    ):
+        """
+        Activate selected users.
+
+        Superusers are excluded from bulk status changes.
+        """
+
+        updated_count = (
+            queryset.filter(
+                is_superuser=False,
+            )
+            .exclude(
+                status=UserStatus.ACTIVE,
+            )
+            .update(
+                status=UserStatus.ACTIVE,
+            )
+        )
+
+        self.message_user(
+            request,
+            f"{updated_count} user(s) activated successfully.",
+        )
+
+    # -------------------------------------------------------------------------
+    # Deactivate
+    # -------------------------------------------------------------------------
+
+    @admin.action(
+        description="Deactivate selected users",
+    )
+    def deactivate_users(
+        self,
+        request: HttpRequest,
+        queryset,
+    ):
+        """
+        Deactivate selected users.
+
+        Superusers are excluded from bulk status changes.
+        """
+
+        updated_count = (
+            queryset.filter(
+                is_superuser=False,
+            )
+            .exclude(
+                status=UserStatus.INACTIVE,
+            )
+            .update(
+                status=UserStatus.INACTIVE,
+            )
+        )
+
+        self.message_user(
+            request,
+            f"{updated_count} user(s) deactivated successfully.",
+        )
+
+    # -------------------------------------------------------------------------
+    # Ban
+    # -------------------------------------------------------------------------
+
+    @admin.action(
+        description="Ban selected users",
+    )
+    def ban_users(
+        self,
+        request: HttpRequest,
+        queryset,
+    ):
+        """
+        Ban selected users.
+
+        Superusers are excluded from bulk status changes.
+        """
+
+        updated_count = (
+            queryset.filter(
+                is_superuser=False,
+            )
+            .exclude(
+                status=UserStatus.BANNED,
+            )
+            .update(
+                status=UserStatus.BANNED,
+            )
+        )
+
+        self.message_user(
+            request,
+            f"{updated_count} user(s) banned successfully.",
+        )
+
+    # -------------------------------------------------------------------------
+    # Unban
+    # -------------------------------------------------------------------------
+
+    @admin.action(
+        description="Unban selected users",
+    )
+    def unban_users(
+        self,
+        request: HttpRequest,
+        queryset,
+    ):
+        """
+        Unban selected users.
+
+        Unbanned users become active.
+        Superusers are excluded from bulk status changes.
+        """
+
+        updated_count = queryset.filter(
+            is_superuser=False,
+            status=UserStatus.BANNED,
+        ).update(
+            status=UserStatus.ACTIVE,
+        )
+
+        self.message_user(
+            request,
+            f"{updated_count} user(s) unbanned successfully.",
+        )
+
+    # =========================================================================
+    # Detail
+    # =========================================================================
+
+    readonly_fields = (
         "id",
         "is_superuser",
         "last_login",
-        "updated_at",
         "created_at",
-    ]
+        "updated_at",
+    )
 
     fieldsets = (
         (
-            "Basic Information",
+            "User",
             {
                 "fields": (
                     "id",
@@ -73,7 +233,7 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
         (
-            "Important Dates",
+            "Dates",
             {
                 "fields": (
                     "last_login",
@@ -94,15 +254,19 @@ class UserAdmin(BaseUserAdmin):
         ),
     )
 
+    # =========================================================================
+    # Add User
+    # =========================================================================
+
     add_fieldsets = (
         (
-            None,
+            "Create User",
             {
                 "classes": ("wide",),
                 "fields": (
+                    "phone_number",
                     "first_name",
                     "last_name",
-                    "phone_number",
                     "role",
                     "status",
                     "password1",
@@ -112,77 +276,244 @@ class UserAdmin(BaseUserAdmin):
         ),
     )
 
-    @admin.display(description="Role", ordering="role")
-    def role_badge(self, obj: UserModel):
+    # =========================================================================
+    # User Display
+    # =========================================================================
+
+    @admin.display(
+        description="User",
+        ordering="first_name",
+    )
+    def user_display(
+        self,
+        obj: UserModel,
+    ):
         """
-        Display user role badge.
+        Display user's name in a compact format.
         """
 
-        roles = {
-            str(UserRole.SUPERUSER): ("👑", "#7c3aed"),
-            str(UserRole.ADMIN): ("🛡️", "#2563eb"),
-            str(UserRole.USER): ("👤", "#6b7280"),
-        }
+        full_name = obj.full_name.strip()
 
-        icon, color = roles.get(
-            str(obj.role),
-            ("❓", "#6b7280"),
+        if full_name:
+            return format_html(
+                "<strong>{}</strong>",
+                full_name,
+            )
+
+        return format_html(
+            '<span style="opacity:.65;">{}</span>',
+            "Unnamed user",
         )
 
-        try:
-            label = UserRole(obj.role).label
-        except ValueError:
-            label = "Unknown"
+    # =========================================================================
+    # Phone
+    # =========================================================================
+
+    @admin.display(
+        description="Phone",
+        ordering="phone_number",
+    )
+    def phone_display(
+        self,
+        obj: UserModel,
+    ):
+        """
+        Display user's phone number.
+        """
+
+        return format_html(
+            "<code>{}</code>",
+            obj.phone_number,
+        )
+
+    # =========================================================================
+    # Role
+    # =========================================================================
+
+    @admin.display(
+        description="Role",
+        ordering="role",
+    )
+    def role_badge(
+        self,
+        obj: UserModel,
+    ):
+        """
+        Display user's role using a subtle semantic indicator.
+        """
+
+        role = str(obj.role)
+
+        role_config = {
+            str(UserRole.SUPERUSER): {
+                "label": UserRole.SUPERUSER.label,
+                "color": "var(--message-warning-fg, #996a00)",
+                "icon": "★",
+            },
+            str(UserRole.ADMIN): {
+                "label": UserRole.ADMIN.label,
+                "color": "var(--message-info-fg, #2767a5)",
+                "icon": "●",
+            },
+            str(UserRole.USER): {
+                "label": UserRole.USER.label,
+                "color": "var(--body-quiet-color, #666)",
+                "icon": "●",
+            },
+        }
+
+        config = role_config.get(
+            role,
+            {
+                "label": "Unknown",
+                "color": "var(--body-quiet-color, #666)",
+                "icon": "●",
+            },
+        )
 
         return format_html(
             """
             <span style="
-                color:{};
-                font-weight:600;
+                display:inline-flex;
+                align-items:center;
+                gap:6px;
+                white-space:nowrap;
             ">
-                {} {}
+                <span style="
+                    color:{};
+                    font-size:10px;
+                    line-height:1;
+                ">
+                    {}
+                </span>
+
+                <span style="
+                    color:var(--body-fg, #333);
+                    font-weight:500;
+                ">
+                    {}
+                </span>
             </span>
             """,
-            color,
-            icon,
-            label,
+            config["color"],
+            config["icon"],
+            config["label"],
         )
 
-    @admin.display(description="Status", ordering="status")
-    def status_badge(self, obj: UserModel):
+    # =========================================================================
+    # Status
+    # =========================================================================
+
+    @admin.display(
+        description="Status",
+        ordering="status",
+    )
+    def status_badge(
+        self,
+        obj: UserModel,
+    ):
         """
-        Display account status badge.
+        Display account status using a subtle status indicator.
         """
 
-        statuses = {
-            str(UserStatus.ACTIVE): ("●", "#16a34a"),
-            str(UserStatus.INACTIVE): ("●", "#6b7280"),
-            str(UserStatus.BANNED): ("●", "#dc2626"),
+        status = str(obj.status)
+
+        status_config = {
+            str(UserStatus.ACTIVE): {
+                "label": UserStatus.ACTIVE.label,
+                "color": "var(--message-success-fg, #198754)",
+            },
+            str(UserStatus.INACTIVE): {
+                "label": UserStatus.INACTIVE.label,
+                "color": "var(--body-quiet-color, #777)",
+            },
+            str(UserStatus.BANNED): {
+                "label": UserStatus.BANNED.label,
+                "color": "var(--message-error-fg, #ba2121)",
+            },
         }
 
-        icon, color = statuses.get(
-            str(obj.status),
-            ("●", "#6b7280"),
+        config = status_config.get(
+            status,
+            {
+                "label": "Unknown",
+                "color": "var(--body-quiet-color, #777)",
+            },
         )
-
-        try:
-            label = UserStatus(obj.status).label
-        except ValueError:
-            label = "Unknown"
 
         return format_html(
             """
             <span style="
-                color:{};
-                font-weight:600;
+                display:inline-flex;
+                align-items:center;
+                gap:7px;
+                white-space:nowrap;
             ">
-                {} {}
+                <span style="
+                    width:7px;
+                    height:7px;
+                    border-radius:50%;
+                    background:{};
+                    flex:none;
+                "></span>
+
+                <span style="
+                    color:var(--body-fg, #333);
+                    font-weight:500;
+                ">
+                    {}
+                </span>
             </span>
             """,
-            color,
-            icon,
-            label,
+            config["color"],
+            config["label"],
         )
+
+    # =========================================================================
+    # Last Login
+    # =========================================================================
+
+    @admin.display(
+        description="Last login",
+        ordering="last_login",
+    )
+    def last_login_display(
+        self,
+        obj: UserModel,
+    ):
+        """
+        Display the last login timestamp.
+        """
+
+        if not obj.last_login:
+            return format_html(
+                '<span style="opacity:.55;">{}</span>',
+                "Never",
+            )
+
+        return obj.last_login
+
+    # =========================================================================
+    # Created At
+    # =========================================================================
+
+    @admin.display(
+        description="Created",
+        ordering="created_at",
+    )
+    def created_at_display(
+        self,
+        obj: UserModel,
+    ):
+        """
+        Display user creation timestamp.
+        """
+
+        return obj.created_at
+
+    # =========================================================================
+    # Permissions
+    # =========================================================================
 
     def get_form(
         self,
@@ -191,6 +522,12 @@ class UserAdmin(BaseUserAdmin):
         change: bool = False,
         **kwargs,
     ) -> type[ModelForm]:
+        """
+        Restrict available role choices.
+
+        Existing superusers can only remain superusers.
+        Normal users can only be USER or ADMIN.
+        """
 
         form = super().get_form(
             request=request,
@@ -199,28 +536,34 @@ class UserAdmin(BaseUserAdmin):
             **kwargs,
         )
 
-        role_field = form.base_fields.get("role")
+        role_field = form.base_fields.get(
+            "role",
+        )
 
-        if isinstance(role_field, ChoiceField):
+        if not isinstance(
+            role_field,
+            ChoiceField,
+        ):
+            return form
 
-            if obj and obj.is_superuser:
-                role_field.choices = [
-                    (
-                        UserRole.SUPERUSER,
-                        UserRole.SUPERUSER.label,
-                    ),
-                ]
+        if obj and obj.is_superuser:
+            role_field.choices = (
+                (
+                    UserRole.SUPERUSER,
+                    UserRole.SUPERUSER.label,
+                ),
+            )
 
-            else:
-                role_field.choices = [
-                    (
-                        UserRole.USER,
-                        UserRole.USER.label,
-                    ),
-                    (
-                        UserRole.ADMIN,
-                        UserRole.ADMIN.label,
-                    ),
-                ]
+        else:
+            role_field.choices = (
+                (
+                    UserRole.USER,
+                    UserRole.USER.label,
+                ),
+                (
+                    UserRole.ADMIN,
+                    UserRole.ADMIN.label,
+                ),
+            )
 
         return form
