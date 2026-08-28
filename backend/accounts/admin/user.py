@@ -26,12 +26,11 @@ class UserAdmin(BaseUserAdmin):
     ordering = ("-created_at",)
 
     # =========================================================================
-    # List
+    # List (user_display contains both name and phone)
     # =========================================================================
 
     list_display = (
         "user_display",
-        "phone_display",
         "role_badge",
         "status_badge",
         "last_login_display",
@@ -277,11 +276,11 @@ class UserAdmin(BaseUserAdmin):
     )
 
     # =========================================================================
-    # User Display
+    # User Display (Combines Name & Phone stacked)
     # =========================================================================
 
     @admin.display(
-        description="User",
+        description="User / Phone",
         ordering="first_name",
     )
     def user_display(
@@ -289,10 +288,19 @@ class UserAdmin(BaseUserAdmin):
         obj: UserModel,
     ):
         """
-        Display user's name in a compact format.
+        Display user's full name and phone number stacked vertically.
         """
 
         full_name = obj.full_name.strip()
+        phone_number = getattr(obj, "phone_number", None)
+
+        if full_name and phone_number:
+            return format_html(
+                "<strong>{}</strong><br>"
+                '<code style="color:var(--body-quiet-color, #666); font-size:12px;">{}</code>',
+                full_name,
+                phone_number,
+            )
 
         if full_name:
             return format_html(
@@ -300,30 +308,15 @@ class UserAdmin(BaseUserAdmin):
                 full_name,
             )
 
+        if phone_number:
+            return format_html(
+                "<code>{}</code>",
+                phone_number,
+            )
+
         return format_html(
             '<span style="opacity:.65;">{}</span>',
             "Unnamed user",
-        )
-
-    # =========================================================================
-    # Phone
-    # =========================================================================
-
-    @admin.display(
-        description="Phone",
-        ordering="phone_number",
-    )
-    def phone_display(
-        self,
-        obj: UserModel,
-    ):
-        """
-        Display user's phone number.
-        """
-
-        return format_html(
-            "<code>{}</code>",
-            obj.phone_number,
         )
 
     # =========================================================================

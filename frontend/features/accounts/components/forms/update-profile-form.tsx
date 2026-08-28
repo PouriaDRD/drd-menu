@@ -7,11 +7,13 @@ import { useProfileForm } from "../../hooks/use-profile-form";
 import { ProfileFormValues } from "../../types";
 
 interface Props {
+	initialValues?: ProfileFormValues;
 	onSuccess?: (data: ProfileFormValues) => void;
 }
 
-export function UpdateProfileForm({ onSuccess }: Props) {
+export function UpdateProfileForm({ initialValues, onSuccess }: Props) {
 	const { form, submit, isPending } = useProfileForm({
+		initialValues,
 		onSuccess(data) {
 			onSuccess?.(data);
 		},

@@ -1,7 +1,8 @@
-export type LoginHistoryDevice = "Mobile" | "Tablet" | "PC" | "Bot" | "Unknown";
+export type LoginHistoryDevice = "PC" | "Mobile" | "Tablet" | "Bot" | "Unknown";
 
 export type LoginHistory = {
 	id: string;
+
 	user: string;
 
 	is_successful: boolean;
@@ -11,7 +12,7 @@ export type LoginHistory = {
 
 	user_agent: string | null;
 
-	device: LoginHistoryDevice;
+	device: LoginHistoryDevice | null;
 	device_family: string | null;
 
 	browser: string | null;

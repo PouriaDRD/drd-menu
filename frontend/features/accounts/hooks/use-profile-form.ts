@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -12,20 +14,30 @@ import { updateProfileSchema } from "../schemas";
 import { ProfileFormValues } from "../types";
 
 interface Props {
+	initialValues?: ProfileFormValues;
 	onSuccess?: (data: ProfileFormValues) => void;
 }
 
-export function useProfileForm({ onSuccess }: Props) {
+export function useProfileForm({ initialValues, onSuccess }: Props) {
 	const mutation = useUpdateProfile();
 
 	const form = useForm<ProfileFormValues>({
 		resolver: zodResolver(updateProfileSchema),
-
 		defaultValues: {
-			first_name: "",
-			last_name: "",
+			first_name: initialValues?.first_name ?? "",
+			last_name: initialValues?.last_name ?? "",
 		},
 	});
+
+	// Keep form values in sync when initialValues change
+	useEffect(() => {
+		if (initialValues) {
+			form.reset({
+				first_name: initialValues.first_name ?? "",
+				last_name: initialValues.last_name ?? "",
+			});
+		}
+	}, [initialValues, form]);
 
 	const handleOnSuccess = async (data: ProfileFormValues) => {
 		await Promise.all([
@@ -33,8 +45,6 @@ export function useProfileForm({ onSuccess }: Props) {
 				queryKey: queryKeys.accounts.myProfile,
 			}),
 		]);
-
-		form.reset();
 
 		toast.success("عملیات موفق بود", {
 			description: "اطلاعات شما با موفقیت ذخیره شد.",
@@ -76,9 +86,7 @@ export function useProfileForm({ onSuccess }: Props) {
 
 	return {
 		form,
-
 		submit,
-
 		isPending: mutation.isPending,
 	};
 }

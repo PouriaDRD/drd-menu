@@ -1,7 +1,8 @@
-from django.contrib import admin
+from django.utils import timezone
+from django.http import HttpRequest
 from django.utils.html import format_html
+from django.contrib import admin, messages
 from django.utils.safestring import mark_safe
-
 from authentication.models import LoginHistoryModel
 
 DEV = True
@@ -11,14 +12,16 @@ DEV = True
 class LoginHistoryAdmin(admin.ModelAdmin):
     """
     Admin configuration for login history records.
-
-    Login history is an audit-oriented model and should normally be
-    read-only in production.
     """
 
-    # ======================================================================
-    # List
-    # ======================================================================
+    list_per_page = 50
+
+    ordering = (
+        "-created_at",
+        "-id",
+    )
+
+    show_facets = admin.ShowFacets.NEVER  # type: ignore
 
     list_display = (
         "user_display",
@@ -28,46 +31,29 @@ class LoginHistoryAdmin(admin.ModelAdmin):
         "browser_display",
         "operating_system_display",
         "location_display",
-        "created_at",
+        "created_at_display",
     )
 
     list_filter = (
         "is_successful",
-        "device",
-        # "operating_system",
-        # "browser",
-        # "country",
-        # "country_code",
-        # "region",
-        # "city",
         "created_at",
     )
 
     search_fields = (
         "user__phone_number",
+        "user__first_name",
+        "user__last_name",
         "ip_address",
+        "browser",
+        "operating_system",
+        "country",
+        "city",
     )
-
-    autocomplete_fields = ("user",)
-
-    ordering = (
-        "-created_at",
-        "-id",
-    )
-
-    list_per_page = 50
-
-    list_select_related = ("user",)
-
-    # ======================================================================
-    # Detail
-    # ======================================================================
 
     readonly_fields = (
         "id",
         "user",
         "ip_address",
-        "user_agent_display",
         "device_display",
         "browser_display",
         "operating_system_display",
@@ -76,10 +62,11 @@ class LoginHistoryAdmin(admin.ModelAdmin):
         "region",
         "city",
         "coordinates_display",
+        "user_agent_display",
         "is_successful",
         "failure_reason_display",
-        "updated_at",
         "created_at",
+        "updated_at",
     )
 
     fieldsets = (
@@ -147,261 +134,204 @@ class LoginHistoryAdmin(admin.ModelAdmin):
         ),
     )
 
-    # ======================================================================
-    # Permissions
-    # ======================================================================
-
-    def has_add_permission(self, request):
-        return DEV
-
-    def has_change_permission(self, request, obj=None):
-        return DEV
-
-    def has_delete_permission(self, request, obj=None):
-        return DEV
-
-    # ======================================================================
-    # User
-    # ======================================================================
-
-    @admin.display(description="User")
-    def user_display(self, obj):
-        user = obj.user
-
-        phone_number = getattr(
-            user,
-            "phone_number",
-            None,
+    def get_queryset(self, request: HttpRequest):
+        return (
+            super().get_queryset(request).select_related("user").order_by("-created_at")
         )
 
-        if phone_number:
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return DEV
+
+    def has_change_permission(
+        self, request: HttpRequest, obj: LoginHistoryModel | None = None
+    ) -> bool:
+        return DEV
+
+    def has_delete_permission(
+        self, request: HttpRequest, obj: LoginHistoryModel | None = None
+    ) -> bool:
+        return DEV
+
+    @admin.display(
+        description="User",
+        ordering="user__first_name",
+    )
+    def user_display(self, obj: LoginHistoryModel):
+        user = getattr(obj, "user", None)
+        if not user:
+            return format_html('<span style="opacity:.55;">{}</span>', "—")
+
+        full_name = getattr(user, "full_name", "").strip()
+        phone_number = getattr(user, "phone_number", None)
+
+        if full_name and phone_number:
             return format_html(
-                "<code>{}</code>",
+                "<strong>{}</strong><br>"
+                '<span style="color:var(--body-quiet-color); font-size:12px;">{}</span>',
+                full_name,
                 phone_number,
             )
 
+        if full_name:
+            return format_html("<strong>{}</strong>", full_name)
+
+        if phone_number:
+            return format_html("<code>{}</code>", phone_number)
+
         return str(user)
 
-    # ======================================================================
-    # Status
-    # ======================================================================
+    @admin.display(
+        description="Status",
+        ordering="is_successful",
+    )
+    def status_badge(self, obj: LoginHistoryModel):
+        if getattr(obj, "is_successful", False):
+            return mark_safe("""
+                <span style="
+                    display:inline-flex;
+                    align-items:center;
+                    gap:6px;
+                    white-space:nowrap;
+                    color:var(--body-fg, #fff);
+                    font-weight:500;
+                ">
+                    <span style="
+                        width:7px;
+                        height:7px;
+                        border-radius:50%;
+                        background:var(--message-success-fg, #198754);
+                        flex:none;
+                    "></span>
+                    Successful
+                </span>
+                """)
 
-    @admin.display(description="Status", ordering="is_successful")
-    def status_badge(self, obj):
-        if obj.is_successful:
-            return mark_safe(
-                '<span style="'
-                "display:inline-flex;"
-                "align-items:center;"
-                "padding:4px 9px;"
-                "border-radius:999px;"
-                "font-size:12px;"
-                "font-weight:600;"
-                "background:#dcfce7;"
-                "color:#166534;"
-                '">'
-                "✓ Successful"
-                "</span>"
-            )
-
-        return mark_safe(
-            '<span style="'
-            "display:inline-flex;"
-            "align-items:center;"
-            "padding:4px 9px;"
-            "border-radius:999px;"
-            "font-size:12px;"
-            "font-weight:600;"
-            "background:#fee2e2;"
-            "color:#991b1b;"
-            '">'
-            "✕ Failed"
-            "</span>"
-        )
-
-    # ======================================================================
-    # IP
-    # ======================================================================
+        return mark_safe("""
+            <span style="
+                display:inline-flex;
+                align-items:center;
+                gap:6px;
+                white-space:nowrap;
+                color:var(--body-fg, #fff);
+                font-weight:500;
+            ">
+                <span style="
+                    width:7px;
+                    height:7px;
+                    border-radius:50%;
+                    background:var(--message-error-fg, #ba2121);
+                    flex:none;
+                "></span>
+                Failed
+            </span>
+            """)
 
     @admin.display(description="IP Address", ordering="ip_address")
-    def ip_address_display(self, obj):
-        if not obj.ip_address:
-            return "—"
-
-        return format_html(
-            "<code>{}</code>",
-            obj.ip_address,
-        )
-
-    # ======================================================================
-    # Device
-    # ======================================================================
+    def ip_address_display(self, obj: LoginHistoryModel):
+        ip = getattr(obj, "ip_address", None)
+        if not ip:
+            return format_html('<span style="opacity:.55;">{}</span>', "—")
+        return format_html("<code>{}</code>", ip)
 
     @admin.display(description="Device", ordering="device")
-    def device_display(self, obj):
-        device = obj.device or "Unknown"
-        family = obj.device_family
-
+    def device_display(self, obj: LoginHistoryModel):
+        device = getattr(obj, "device", None) or "Unknown"
+        family = getattr(obj, "device_family", None)
         if family:
             return format_html(
                 "<strong>{}</strong><br>"
-                '<span style="color:#6b7280;font-size:12px;">'
-                "{}"
-                "</span>",
+                '<span style="color:var(--body-quiet-color); font-size:12px;">{}</span>',
                 device,
                 family,
             )
-
-        return device
-
-    # ======================================================================
-    # Browser
-    # ======================================================================
+        return format_html("<strong>{}</strong>", device)
 
     @admin.display(description="Browser", ordering="browser")
-    def browser_display(self, obj):
-        if not obj.browser:
-            return "—"
-
-        if obj.browser_version:
+    def browser_display(self, obj: LoginHistoryModel):
+        browser = getattr(obj, "browser", None)
+        if not browser:
+            return format_html('<span style="opacity:.55;">{}</span>', "—")
+        version = getattr(obj, "browser_version", None)
+        if version:
             return format_html(
-                "<strong>{}</strong> " '<span style="color:#6b7280;">{}</span>',
-                obj.browser,
-                obj.browser_version,
+                "<strong>{}</strong> "
+                '<span style="color:var(--body-quiet-color);">{}</span>',
+                browser,
+                version,
             )
-
-        return obj.browser
-
-    # ======================================================================
-    # Operating System
-    # ======================================================================
+        return format_html("<strong>{}</strong>", browser)
 
     @admin.display(description="Operating System", ordering="operating_system")
-    def operating_system_display(self, obj):
-        if not obj.operating_system:
-            return "—"
-
-        if obj.operating_system_version:
+    def operating_system_display(self, obj: LoginHistoryModel):
+        operating_system = getattr(obj, "operating_system", None)
+        if not operating_system:
+            return format_html('<span style="opacity:.55;">{}</span>', "—")
+        version = getattr(obj, "operating_system_version", None)
+        if version:
             return format_html(
-                "<strong>{}</strong> " '<span style="color:#6b7280;">{}</span>',
-                obj.operating_system,
-                obj.operating_system_version,
+                "<strong>{}</strong> "
+                '<span style="color:var(--body-quiet-color);">{}</span>',
+                operating_system,
+                version,
             )
-
-        return obj.operating_system
-
-    # ======================================================================
-    # Location
-    # ======================================================================
+        return format_html("<strong>{}</strong>", operating_system)
 
     @admin.display(description="Location")
-    def location_display(self, obj):
-        city = obj.city
-        region = obj.region
-        country = obj.country
-        country_code = obj.country_code
+    def location_display(self, obj: LoginHistoryModel):
+        city = getattr(obj, "city", None)
+        region = getattr(obj, "region", None)
+        country = getattr(obj, "country", None)
+        country_code = getattr(obj, "country_code", None)
 
-        if not any(
-            (
-                city,
-                region,
-                country,
-                country_code,
-            )
-        ):
-            return "—"
+        if not any((city, region, country, country_code)):
+            return format_html('<span style="opacity:.55;">{}</span>', "—")
 
-        main_location = city or region or country or country_code
-
+        primary = city or region or country or country_code
         secondary = []
-
-        if region and region != main_location:
+        if region and region != primary:
             secondary.append(region)
-
-        if country and country != main_location:
+        if country and country != primary:
             secondary.append(country)
-
         if country_code:
             secondary.append(country_code.upper())
 
         if secondary:
             return format_html(
                 "<strong>{}</strong><br>"
-                '<span style="color:#6b7280;font-size:12px;">'
-                "{}"
-                "</span>",
-                main_location,
+                '<span style="color:var(--body-quiet-color); font-size:12px;">{}</span>',
+                primary,
                 " • ".join(secondary),
             )
-
-        return format_html(
-            "<strong>{}</strong>",
-            main_location,
-        )
-
-    # ======================================================================
-    # Coordinates
-    # ======================================================================
+        return format_html("<strong>{}</strong>", primary)
 
     @admin.display(description="Coordinates")
-    def coordinates_display(self, obj):
-        latitude = getattr(
-            obj,
-            "latitude",
-            None,
-        )
-
-        longitude = getattr(
-            obj,
-            "longitude",
-            None,
-        )
-
+    def coordinates_display(self, obj: LoginHistoryModel):
+        latitude = getattr(obj, "latitude", None)
+        longitude = getattr(obj, "longitude", None)
         if latitude is None or longitude is None:
-            return "—"
-
-        return format_html(
-            "<code>{}, {}</code>",
-            latitude,
-            longitude,
-        )
-
-    # ======================================================================
-    # User Agent
-    # ======================================================================
+            return format_html('<span style="opacity:.55;">{}</span>', "—")
+        return format_html("<code>{}, {}</code>", latitude, longitude)
 
     @admin.display(description="User Agent")
-    def user_agent_display(self, obj):
-        if not obj.user_agent:
-            return "—"
-
+    def user_agent_display(self, obj: LoginHistoryModel):
+        user_agent = getattr(obj, "user_agent", None)
+        if not user_agent:
+            return format_html('<span style="opacity:.55;">{}</span>', "—")
         return format_html(
-            '<div style="'
-            "max-width:900px;"
-            "overflow-wrap:anywhere;"
-            "white-space:normal;"
-            '">'
-            "<code>{}</code>"
-            "</div>",
-            obj.user_agent,
+            '<div style="max-width:900px; overflow-wrap:anywhere; white-space:normal;"><code>{}</code></div>',
+            user_agent,
         )
-
-    # ======================================================================
-    # Failure Reason
-    # ======================================================================
 
     @admin.display(description="Failure Reason")
-    def failure_reason_display(self, obj):
-        if not obj.failure_reason:
-            return "—"
-
+    def failure_reason_display(self, obj: LoginHistoryModel):
+        reason = getattr(obj, "failure_reason", None)
+        if not reason:
+            return format_html('<span style="opacity:.55;">{}</span>', "—")
         return format_html(
-            '<div style="'
-            "max-width:900px;"
-            "overflow-wrap:anywhere;"
-            "white-space:normal;"
-            '">'
-            "<code>{}</code>"
-            "</div>",
-            obj.failure_reason,
+            '<div style="max-width:900px; overflow-wrap:anywhere; white-space:normal;"><code>{}</code></div>',
+            reason,
         )
+
+    @admin.display(description="Created", ordering="created_at")
+    def created_at_display(self, obj: LoginHistoryModel):
+        return obj.created_at
